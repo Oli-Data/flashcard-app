@@ -10,10 +10,15 @@ def generate_flashcards(chapter_text: str, num_cards: int = 10) -> list:
 
 Each flashcard should cover a key concept, term, or idea from the text.
 
+For each flashcard, also include the exact sentence or phrase from the text that supports the answer. This source quote must be copied verbatim from the text below.
+
 Return ONLY a JSON array with this exact format, no other text, no markdown, no backticks:
 [
-  {{"question": "What is...", "answer": "..."}},
-  {{"question": "Define...", "answer": "..."}}
+  {{
+    "question": "What is...",
+    "answer": "...",
+    "source_quote": "exact sentence from the text that supports this answer"
+  }}
 ]
 
 Chapter text:
@@ -26,8 +31,6 @@ Chapter text:
     )
     
     response_text = message.content[0].text.strip()
-    
-    # Strip markdown code blocks if present
     response_text = re.sub(r'^```json\s*', '', response_text)
     response_text = re.sub(r'^```\s*', '', response_text)
     response_text = re.sub(r'\s*```$', '', response_text)
