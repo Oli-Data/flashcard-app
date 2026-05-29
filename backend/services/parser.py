@@ -1,0 +1,81 @@
+import fitz  # PyMuPDF
+import docx
+import ebooklib
+from ebooklib import epub
+from bs4 import BeautifulSoup
+import os
+
+def parse_pdf(file_path: str) -> dict:
+    doc = fitz.open(file_path)
+    chapters = {}
+    toc = doc.get_toc()
+    
+    if toc:
+        for i, entry in enumerate(toc):
+            level, title, page = entry
+            if level == 1:
+                start_page = page - 1
+                end_page = toc[i + 1][2] - 1 if i + 1 < len(toc) else len(doc)
+                text = ""
+                for p in range(start_page, end_page):
+                    text += doc[p].get_text()
+                chapters[title] = text.strip()
+    else:
+        total_pages = len(doc)
+        chunk_size = 10
+        for i in range(0, total_pages, chunk_size):
+            text = ""
+            for p in range(i, min(i + chunk_size, total_pages)):
+                text += doc[p].get_text()
+            chapters[f"Pages {i+1}-{min(i+chunk_size, total_pages)}"] = text.strip()
+    
+    doc.close()
+    return chapters
+
+def parse_docx(file_path: str) -> dict:
+    doc = docx.Document(file_path)
+    chapters = {}
+    current_chapter = "Introduction"
+    current_text = []
+    
+    for para in doc.paragraphs:
+        if para.style.name.startswith("Heading 1"):
+            if current_text:
+                chapters[current_chapter] = " ".join(current_text).strip()
+            current_chapter = para.text
+            current_text = []
+        else:
+            if para.text.strip():
+                current_text.append(para.text)
+    
+    if current_text:
+        chapters[current_chapter] = " ".join(current_text).strip()
+    
+    return chapters
+
+def parse_epub(file_path: str) -> dict:
+    book = epub.read_epub(file_path)
+    chapters = {}
+    
+    for item in book.get_items():
+        if item.get_type() == ebooklib.ITEM_DOCUMENT:
+            soup = BeautifulSoup(item.get_content(), "html.parser")
+            title = soup.find(["h1", "h2"])
+            title_text = title.get_text() if title else item.get_name()
+            body_text = soup.get_text(separator=" ", strip=True)
+            if body_text:
+                chapters[title_text] = body_text
+    
+    return chapters
+
+def parse_file(file_path: str) -> dict:
+    ext = os.path.splitext(file_path)[1].lower()
+    
+    if ext == ".pdf":
+        return parse_pdf(file_path)
+    elif ext == ".docx":
+        return parse_docx(file_path)
+    elif ext == ".epub":
+        return parse_epub(file_path)
+    else:
+        raise ValueError(f"Unsupported file type: {ext}")
