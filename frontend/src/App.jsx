@@ -5,6 +5,7 @@ import Upload from "./components/Upload"
 import ChapterSelect from "./components/ChapterSelect"
 import Flashcard from "./components/Flashcard"
 import Auth from "./components/Auth"
+import ExamMode from "./components/ExamMode"
 
 function App() {
   const { user, logout } = useAuth()
@@ -14,6 +15,7 @@ function App() {
   const [flipped, setFlipped] = useState(false)
   const [savedSets, setSavedSets] = useState([])
   const [showSaved, setShowSaved] = useState(false)
+  const [examMode, setExamMode] = useState(false)
 
   useEffect(() => {
     if (user) fetchSavedSets()
@@ -103,17 +105,33 @@ function App() {
 
       <Upload onUpload={setFileData} />
 
-      {fileData && (
-        <ChapterSelect
-          fileData={fileData}
-          onGenerate={(cards) => {
+      {fileData && !examMode && (
+        <div style={{ textAlign: "right", marginBottom: "0.5rem" }}>
+            <button
+                onClick={() => setExamMode(true)}
+                style={{ padding: "0.5rem 1rem", background: "#ff6b6b", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
+            >
+                Exam Mode
+            </button>
+        </div>
+        )}
+
+        {fileData && examMode && (
+            <ExamMode fileData={fileData} onExit={() => setExamMode(false)} />
+        )}
+
+        {fileData && !examMode && (
+            <ChapterSelect
+            fileData={fileData}
+            onGenerate={(cards) => {
             setFlashcards(cards)
             setCurrentCard(0)
             setFlipped(false)
             fetchSavedSets()
-          }}
-        />
-      )}
+            }}
+            />
+        )}
+
 
       {flashcards.length > 0 && (
         <div>
