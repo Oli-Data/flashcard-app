@@ -26,7 +26,17 @@ class FlashcardSet(Base):
     user_id = Column(Integer, index=True)
     title = Column(String)
     chapter = Column(String)
-    cards = Column(Text)  # JSON string
+    cards = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class UserFile(Base):
+    __tablename__ = "user_files"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    filename = Column(String)
+    file_path = Column(String)
+    file_type = Column(String)
+    chapters = Column(Text)  # JSON string of chapter names
     created_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():

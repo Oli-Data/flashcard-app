@@ -6,6 +6,7 @@ import ChapterSelect from "./components/ChapterSelect"
 import Flashcard from "./components/Flashcard"
 import Auth from "./components/Auth"
 import ExamMode from "./components/ExamMode"
+import FileLibrary from "./components/FileLibrary"
 
 function App() {
   const { user, logout } = useAuth()
@@ -104,6 +105,8 @@ function App() {
       )}
 
       <Upload onUpload={setFileData} />
+
+      <FileLibrary onFileSelect={setFileData} />
 
       {fileData && !examMode && (
         <div style={{ textAlign: "right", marginBottom: "0.5rem" }}>
