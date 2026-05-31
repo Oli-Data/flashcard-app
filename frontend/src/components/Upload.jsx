@@ -18,7 +18,7 @@ function Upload({ onUpload }) {
     formData.append("file", file)
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/upload/", formData)
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/upload/`, formData)
       onUpload(res.data)
     } catch (err) {
       setError("Failed to upload file. Make sure it's a PDF, DOCX, or EPUB.")

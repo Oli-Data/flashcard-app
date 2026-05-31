@@ -18,7 +18,7 @@ function ExamMode({ fileData, onExit }) {
     setLoading(true)
     setError(null)
     try {
-      const res = await axios.post("http://127.0.0.1:8000/flashcards/exam", {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/flashcards/exam`, {
         file_path: fileData.file_path,
         chapter: selectedChapter,
         num_questions: numQuestions

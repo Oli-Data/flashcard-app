@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
   }, [token])
 
   const login = async (email, password) => {
-    const res = await axios.post("http://127.0.0.1:8000/auth/login", { email, password })
+    const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password })
     const t = res.data.access_token
     localStorage.setItem("token", t)
     setToken(t)
@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
   }
 
   const register = async (email, password) => {
-    const res = await axios.post("http://127.0.0.1:8000/auth/register", { email, password })
+    const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, { email, password })
     const t = res.data.access_token
     localStorage.setItem("token", t)
     setToken(t)

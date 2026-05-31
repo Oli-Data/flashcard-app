@@ -11,7 +11,7 @@ function FileLibrary({ onFileSelect }) {
 
   const fetchFiles = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/upload/files")
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/upload/files`)
       setFiles(res.data)
     } catch (err) {
       console.error("Failed to fetch files")
@@ -22,7 +22,7 @@ function FileLibrary({ onFileSelect }) {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/upload/files/${id}`)
+      await axios.delete(`${import.meta.env.VITE_API_URL}/upload/files/${id}`)
       fetchFiles()
     } catch (err) {
       console.error("Failed to delete file")

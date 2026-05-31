@@ -18,7 +18,7 @@ function ChapterSelect({ fileData, onGenerate, onExamMode }) {
     setCurrentCards(null)
 
     try {
-      const res = await axios.post("http://127.0.0.1:8000/flashcards/generate", {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/flashcards/generate`, {
         file_path: fileData.file_path,
         chapter: selectedChapter,
         num_cards: numCards
@@ -39,7 +39,7 @@ function ChapterSelect({ fileData, onGenerate, onExamMode }) {
     setSavedMessage(null)
 
     try {
-      await axios.post("http://127.0.0.1:8000/sets/save", {
+      await axios.post(`${import.meta.env.VITE_API_URL}/sets/save`, {
         title: setTitle || selectedChapter,
         chapter: selectedChapter,
         cards: currentCards

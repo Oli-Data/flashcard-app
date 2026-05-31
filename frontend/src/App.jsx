@@ -395,7 +395,7 @@ export default function App() {
 
   const fetchSavedSets = async () => {
     try {
-      const res = await axios.get("http://127.0.0.1:8000/sets/")
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/sets/`)
       setSavedSets(res.data)
     } catch (err) {
       console.error("Failed to fetch saved sets")
@@ -432,7 +432,7 @@ export default function App() {
 
   const deleteSet = async (id) => {
     try {
-      await axios.delete(`http://127.0.0.1:8000/sets/${id}`)
+      await axios.delete(`${import.meta.env.VITE_API_URL}/sets/${id}`)
       fetchSavedSets()
     } catch (err) {
       console.error("Failed to delete set")
