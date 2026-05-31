@@ -68,74 +68,128 @@ function ExamMode({ fileData, onExit }) {
   const getOptionStyle = (index) => {
     const base = {
       width: "100%",
-      padding: "0.75rem 1rem",
-      marginBottom: "0.5rem",
-      borderRadius: "8px",
-      border: "1px solid #ccc",
+      padding: "0.85rem 1.1rem",
+      marginBottom: "0.6rem",
+      borderRadius: "10px",
+      border: "1px solid rgba(0, 220, 240, 0.15)",
       cursor: submitted ? "default" : "pointer",
       textAlign: "left",
-      fontSize: "1rem",
-      background: "white",
+      fontSize: "0.95rem",
+      fontFamily: "'DM Sans', sans-serif",
+      background: "rgba(0, 180, 210, 0.04)",
+      color: "#e8f4f8",
       transition: "all 0.2s"
     }
 
     if (!submitted) {
       if (index === selected) {
-        return { ...base, background: "#e8e4ff", border: "2px solid #6c63ff" }
+        return { ...base, background: "rgba(124, 111, 255, 0.15)", border: "2px solid rgba(124, 111, 255, 0.5)", color: "#e0d4ff" }
       }
       return base
     }
 
-    // After submit
     if (index === questions[currentQ].correct_index) {
-      return { ...base, background: "#d4edda", border: "2px solid #28a745" }
+      return { ...base, background: "rgba(0, 180, 100, 0.15)", border: "2px solid rgba(0, 220, 120, 0.5)", color: "#aff5d0" }
     }
     if (index === selected && selected !== questions[currentQ].correct_index) {
-      return { ...base, background: "#f8d7da", border: "2px solid #dc3545" }
+      return { ...base, background: "rgba(239, 68, 68, 0.12)", border: "2px solid rgba(239, 68, 68, 0.4)", color: "#f87171" }
     }
     return base
+  }
+
+  const glassPanel = {
+    background: "rgba(0, 180, 210, 0.06)",
+    backdropFilter: "blur(24px)",
+    border: "1px solid rgba(0, 220, 240, 0.12)",
+    borderRadius: "18px",
+    padding: "1.5rem",
+    marginBottom: "1.25rem",
+    position: "relative",
+    overflow: "hidden"
+  }
+
+  const topLine = {
+    position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+    background: "linear-gradient(90deg, transparent, rgba(0,220,240,0.3), transparent)"
+  }
+
+  const panelTitle = {
+    fontFamily: "'Syne', sans-serif",
+    fontSize: "0.72rem",
+    fontWeight: 700,
+    color: "rgba(0, 220, 240, 0.5)",
+    textTransform: "uppercase",
+    letterSpacing: "0.1em",
+    marginBottom: "1rem"
   }
 
   // Setup screen
   if (questions.length === 0) {
     return (
-      <div style={{ border: "1px solid #ccc", padding: "1.5rem", borderRadius: "8px", marginBottom: "1rem" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0 }}>Exam Mode</h2>
-          <button onClick={onExit} style={{ padding: "0.4rem 1rem", cursor: "pointer" }}>Back</button>
-        </div>
-
-        <div style={{ marginTop: "1rem" }}>
-          <label>Chapter:</label>
-          <select
-            value={selectedChapter}
-            onChange={(e) => setSelectedChapter(e.target.value)}
-            style={{ width: "100%", padding: "0.5rem", marginBottom: "1rem", marginTop: "0.25rem" }}
-          >
-            {fileData.chapters.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-
-          <label>Number of questions: {numQuestions}</label>
-          <input
-            type="range"
-            min="5"
-            max="20"
-            value={numQuestions}
-            onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-            style={{ width: "100%", marginBottom: "1rem" }}
-          />
-
+      <div style={glassPanel}>
+        <div style={topLine} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <p style={panelTitle}>Exam Mode</p>
           <button
-            onClick={startExam}
-            disabled={loading}
-            style={{ width: "100%", padding: "0.75rem", background: "#6c63ff", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "1rem" }}
+            onClick={onExit}
+            style={{
+              padding: "0.4rem 1rem",
+              background: "rgba(255,255,255,0.05)",
+              color: "rgba(200,240,255,0.65)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.85rem"
+            }}
           >
-            {loading ? "Generating exam..." : "Start Exam"}
+            Back
           </button>
-          {error && <p style={{ color: "red" }}>{error}</p>}
         </div>
+
+        <label style={{ color: "rgba(200, 235, 245, 0.55)", fontSize: "0.88rem", display: "block", marginBottom: "0.4rem" }}>Chapter:</label>
+        <select
+          value={selectedChapter}
+          onChange={(e) => setSelectedChapter(e.target.value)}
+          style={{ marginBottom: "1rem" }}
+        >
+          {fileData.chapters.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+
+        <label style={{ color: "rgba(200, 235, 245, 0.55)", fontSize: "0.88rem", display: "block", marginBottom: "0.4rem" }}>
+          Number of questions: {numQuestions}
+        </label>
+        <input
+          type="range"
+          min="5"
+          max="20"
+          value={numQuestions}
+          onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+          style={{ width: "100%", marginBottom: "1rem", accentColor: "#00e5ff" }}
+        />
+
+        <button
+          onClick={startExam}
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "0.8rem",
+            background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
+            color: "#e0f4ff",
+            border: "1px solid rgba(0,200,240,0.2)",
+            borderRadius: "10px",
+            cursor: "pointer",
+            fontSize: "0.95rem",
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500,
+            transition: "all 0.2s"
+          }}
+        >
+          {loading ? "Generating exam..." : "Start Exam"}
+        </button>
+        {error && <p style={{ color: "#f87171", marginTop: "0.75rem", fontSize: "0.88rem", textAlign: "center" }}>{error}</p>}
       </div>
     )
   }
@@ -144,31 +198,64 @@ function ExamMode({ fileData, onExit }) {
   if (finished) {
     const percentage = Math.round((score / questions.length) * 100)
     return (
-      <div style={{ border: "1px solid #ccc", padding: "1.5rem", borderRadius: "8px" }}>
-        <h2 style={{ textAlign: "center" }}>Exam Complete</h2>
-        <p style={{ textAlign: "center", fontSize: "2rem", fontWeight: "bold", color: percentage >= 70 ? "#28a745" : "#dc3545" }}>
-          {score}/{questions.length} ({percentage}%)
+      <div style={glassPanel}>
+        <div style={topLine} />
+        <h2 style={{ textAlign: "center", fontFamily: "'Syne', sans-serif", color: "#e8f4f8", marginBottom: "0.5rem" }}>
+          Exam Complete
+        </h2>
+        <p style={{
+          textAlign: "center",
+          fontSize: "2.5rem",
+          fontWeight: "bold",
+          fontFamily: "'Syne', sans-serif",
+          color: percentage >= 70 ? "#aff5d0" : "#f87171",
+          marginBottom: "1.5rem"
+        }}>
+          {score}/{questions.length} <span style={{ fontSize: "1.2rem", opacity: 0.7 }}>({percentage}%)</span>
         </p>
 
-        <h3>Review:</h3>
+        <p style={panelTitle}>Review</p>
         {results.map((r, i) => (
-          <div key={i} style={{ padding: "0.75rem", marginBottom: "0.5rem", borderRadius: "8px", background: r.correct ? "#d4edda" : "#f8d7da" }}>
-            <p style={{ margin: 0, fontWeight: "bold" }}>{r.question}</p>
-            {!r.correct && <p style={{ margin: "0.25rem 0 0", fontSize: "0.9rem" }}>Your answer: {r.selected}</p>}
-            {!r.correct && <p style={{ margin: "0.25rem 0 0", fontSize: "0.9rem", color: "#28a745" }}>Correct: {r.answer}</p>}
+          <div key={i} style={{
+            padding: "0.85rem 1rem",
+            marginBottom: "0.5rem",
+            borderRadius: "10px",
+            background: r.correct ? "rgba(0,180,100,0.1)" : "rgba(239,68,68,0.1)",
+            border: `1px solid ${r.correct ? "rgba(0,220,120,0.2)" : "rgba(239,68,68,0.2)"}`
+          }}>
+            <p style={{ margin: 0, fontWeight: 500, color: "#e8f4f8", fontSize: "0.92rem" }}>{r.question}</p>
+            {!r.correct && (
+              <>
+                <p style={{ margin: "0.4rem 0 0", fontSize: "0.82rem", color: "#f87171" }}>Your answer: {r.selected}</p>
+                <p style={{ margin: "0.2rem 0 0", fontSize: "0.82rem", color: "#aff5d0" }}>Correct: {r.answer}</p>
+              </>
+            )}
           </div>
         ))}
 
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "1rem" }}>
+        <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
           <button
             onClick={() => { setQuestions([]); setFinished(false) }}
-            style={{ flex: 1, padding: "0.75rem", background: "#6c63ff", color: "white", border: "none", borderRadius: "8px", cursor: "pointer" }}
+            style={{
+              flex: 1, padding: "0.75rem",
+              background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
+              color: "#e0f4ff", border: "1px solid rgba(0,200,240,0.2)",
+              borderRadius: "10px", cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif", fontWeight: 500
+            }}
           >
             New Exam
           </button>
           <button
             onClick={onExit}
-            style={{ flex: 1, padding: "0.75rem", cursor: "pointer", borderRadius: "8px" }}
+            style={{
+              flex: 1, padding: "0.75rem",
+              background: "rgba(255,255,255,0.05)",
+              color: "rgba(200,240,255,0.65)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "10px", cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif"
+            }}
           >
             Back
           </button>
@@ -180,13 +267,35 @@ function ExamMode({ fileData, onExit }) {
   // Question screen
   const q = questions[currentQ]
   return (
-    <div style={{ border: "1px solid #ccc", padding: "1.5rem", borderRadius: "8px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-        <span style={{ color: "#666" }}>Question {currentQ + 1} of {questions.length}</span>
-        <span style={{ color: "#666" }}>Score: {score}</span>
+    <div style={glassPanel}>
+      <div style={topLine} />
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1.25rem", alignItems: "center" }}>
+        <span style={{ color: "rgba(200,235,245,0.4)", fontSize: "0.82rem", fontFamily: "'Syne', sans-serif" }}>
+          Question {currentQ + 1} of {questions.length}
+        </span>
+        <span style={{
+          color: "rgba(0,220,240,0.7)",
+          fontSize: "0.82rem",
+          fontFamily: "'Syne', sans-serif",
+          background: "rgba(0,200,220,0.08)",
+          border: "1px solid rgba(0,220,240,0.2)",
+          padding: "0.2rem 0.7rem",
+          borderRadius: "20px"
+        }}>
+          Score: {score}
+        </span>
       </div>
 
-      <p style={{ fontSize: "1.1rem", fontWeight: "bold", marginBottom: "1.5rem" }}>{q.question}</p>
+      <p style={{
+        fontSize: "1.05rem",
+        fontWeight: 500,
+        color: "#e8f4f8",
+        marginBottom: "1.25rem",
+        lineHeight: 1.6,
+        fontFamily: "'DM Sans', sans-serif"
+      }}>
+        {q.question}
+      </p>
 
       {q.options.map((option, index) => (
         <button
@@ -194,14 +303,21 @@ function ExamMode({ fileData, onExit }) {
           onClick={() => handleSelect(index)}
           style={getOptionStyle(index)}
         >
-          {String.fromCharCode(65 + index)}. {option}
+          <span style={{ opacity: 0.5, marginRight: "0.6rem" }}>{String.fromCharCode(65 + index)}.</span>
+          {option}
         </button>
       ))}
 
       {selected !== null && !submitted && (
         <button
           onClick={handleSubmit}
-          style={{ width: "100%", padding: "0.75rem", background: "#6c63ff", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", marginTop: "1rem", fontSize: "1rem" }}
+          style={{
+            width: "100%", padding: "0.8rem",
+            background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
+            color: "#e0f4ff", border: "1px solid rgba(0,200,240,0.2)",
+            borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
+            fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
+          }}
         >
           Submit Answer
         </button>
@@ -210,7 +326,13 @@ function ExamMode({ fileData, onExit }) {
       {submitted && (
         <button
           onClick={handleNext}
-          style={{ width: "100%", padding: "0.75rem", background: "#28a745", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", marginTop: "1rem", fontSize: "1rem" }}
+          style={{
+            width: "100%", padding: "0.8rem",
+            background: "linear-gradient(135deg, rgba(0,180,100,0.7), rgba(0,160,80,0.7))",
+            color: "#aff5d0", border: "1px solid rgba(0,220,120,0.3)",
+            borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
+            fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
+          }}
         >
           {currentQ + 1 >= questions.length ? "See Results" : "Next Question"}
         </button>
