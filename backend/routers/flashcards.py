@@ -28,7 +28,11 @@ async def generate(request: FlashcardRequest):
             "num_cards": len(flashcards),
             "flashcards": flashcards
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/exam")
