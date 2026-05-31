@@ -6,17 +6,23 @@ from pydantic import BaseModel
 router = APIRouter(prefix="/flashcards", tags=["flashcards"])
 
 class FlashcardRequest(BaseModel):
+    """Request model for flashcard generation"""
     file_path: str
     chapter: str
     num_cards: int = 10
 
 class ExamRequest(BaseModel):
+    """Request model for exam generation"""
     file_path: str
     chapter: str
     num_questions: int = 10
 
 @router.post("/generate")
 async def generate(request: FlashcardRequest):
+    """
+    Parse the uploaded file, extract the requested chapter,
+    and generate AI flashcards with source quotes.
+    """
     try:
         chapters = parse_file(request.file_path)
         if request.chapter not in chapters:
@@ -37,6 +43,10 @@ async def generate(request: FlashcardRequest):
 
 @router.post("/exam")
 async def exam(request: ExamRequest):
+    """
+    Parse the uploaded file, extract the requested chapter,
+    and generate AI multiple choice exam questions.
+    """
     try:
         chapters = parse_file(request.file_path)
         if request.chapter not in chapters:

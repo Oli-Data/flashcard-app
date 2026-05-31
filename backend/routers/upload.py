@@ -12,6 +12,7 @@ router = APIRouter(prefix="/upload", tags=["upload"])
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".epub"}
 UPLOAD_DIR = "uploads"
 
+# Ensure upload directory exists
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/")
@@ -20,6 +21,10 @@ async def upload_file(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Upload a textbook file (PDF, DOCX, or EPUB).
+    Parses chapters and saves file metadata to the database.
+    """
     ext = os.path.splitext(file.filename)[1].lower()
 
     if ext not in ALLOWED_EXTENSIONS:
@@ -28,6 +33,7 @@ async def upload_file(
             detail="File type not supported. Please upload a PDF, DOCX, or EPUB."
         )
 
+    # Save to user-specific subdirectory to avoid filename conflicts
     user_dir = os.path.join(UPLOAD_DIR, str(current_user.id))
     os.makedirs(user_dir, exist_ok=True)
     file_path = os.path.join(user_dir, file.filename)
@@ -37,6 +43,7 @@ async def upload_file(
 
     chapters = parse_file(file_path)
 
+    # Update existing record or create new one
     existing = db.query(UserFile).filter(
         UserFile.user_id == current_user.id,
         UserFile.filename == file.filename
@@ -67,6 +74,7 @@ async def upload_file(
 
 @router.get("/files")
 def get_files(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Retrieve all uploaded files for the current user"""
     files = db.query(UserFile).filter(UserFile.user_id == current_user.id).all()
     return [
         {
@@ -82,6 +90,7 @@ def get_files(db: Session = Depends(get_db), current_user: User = Depends(get_cu
 
 @router.delete("/files/{file_id}")
 def delete_file(file_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Delete a specific uploaded file owned by the current user"""
     f = db.query(UserFile).filter(UserFile.id == file_id, UserFile.user_id == current_user.id).first()
     if not f:
         raise HTTPException(status_code=404, detail="File not found")

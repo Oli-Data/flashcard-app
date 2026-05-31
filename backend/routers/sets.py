@@ -8,12 +8,14 @@ import json
 router = APIRouter(prefix="/sets", tags=["sets"])
 
 class SaveSetRequest(BaseModel):
+    """Request model for saving a flashcard set"""
     title: str
     chapter: str
     cards: list
 
 @router.post("/save")
 def save_set(request: SaveSetRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Save a generated flashcard set to the database for the current user"""
     new_set = FlashcardSet(
         user_id=current_user.id,
         title=request.title,
@@ -27,6 +29,7 @@ def save_set(request: SaveSetRequest, db: Session = Depends(get_db), current_use
 
 @router.get("/")
 def get_sets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Retrieve all saved flashcard sets for the current user"""
     sets = db.query(FlashcardSet).filter(FlashcardSet.user_id == current_user.id).all()
     return [
         {
@@ -41,6 +44,7 @@ def get_sets(db: Session = Depends(get_db), current_user: User = Depends(get_cur
 
 @router.delete("/{set_id}")
 def delete_set(set_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Delete a specific flashcard set owned by the current user"""
     s = db.query(FlashcardSet).filter(FlashcardSet.id == set_id, FlashcardSet.user_id == current_user.id).first()
     if not s:
         raise HTTPException(status_code=404, detail="Set not found")
