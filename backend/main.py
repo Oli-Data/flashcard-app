@@ -1,15 +1,18 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import upload, flashcards
-from routers import auth, sets
+from routers import upload, flashcards, auth, sets
 from dotenv import load_dotenv
 from database import create_tables
 
+# Load environment variables from .env file
 load_dotenv()
+
+# Create database tables on startup
 create_tables()
 
-app = FastAPI(title="Flashcard Generator API")
+app = FastAPI(title="Lumitodee API")
 
+# Allow requests from frontend origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -23,6 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register routers
 app.include_router(upload.router)
 app.include_router(flashcards.router)
 app.include_router(auth.router)
@@ -30,4 +34,4 @@ app.include_router(sets.router)
 
 @app.get("/")
 def root():
-    return {"message": "Flashcard API is running"}
+    return {"message": "Lumitodee API is running"}

@@ -3,9 +3,14 @@ import os
 import json
 import re
 
+# Initialize Anthropic client using API key from environment
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 def generate_flashcards(chapter_text: str, num_cards: int = 10) -> list:
+    """
+    Generate flashcards from a chapter of text using Claude.
+    Each card includes a question, answer, and source quote from the original text.
+    """
     prompt = f"""You are an expert educator. Given the following textbook chapter text, generate exactly {num_cards} flashcards.
 
 Each flashcard should cover a key concept, term, or idea from the text.
@@ -29,18 +34,23 @@ Chapter text:
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}]
     )
-    
+
+    # Strip any markdown formatting Claude might add
     response_text = message.content[0].text.strip()
     response_text = re.sub(r'^```json\s*', '', response_text)
     response_text = re.sub(r'^```\s*', '', response_text)
     response_text = re.sub(r'\s*```$', '', response_text)
     response_text = response_text.strip()
-    
+
     flashcards = json.loads(response_text)
     return flashcards
 
 
 def generate_exam(chapter_text: str, num_questions: int = 10) -> list:
+    """
+    Generate multiple choice exam questions from a chapter of text using Claude.
+    Each question includes 4 options with one correct answer and its index.
+    """
     prompt = f"""You are an expert educator. Given the following textbook chapter text, generate exactly {num_questions} multiple choice questions.
 
 For each question, provide:
@@ -58,7 +68,7 @@ Return ONLY a JSON array with this exact format, no other text, no markdown, no 
   }}
 ]
 
-Important: shuffle the position of the correct answer randomly across questions. Don't always put it first.
+Important: shuffle the position of the correct answer randomly across questions.
 
 Chapter text:
 {chapter_text[:8000]}"""
@@ -68,12 +78,13 @@ Chapter text:
         max_tokens=3000,
         messages=[{"role": "user", "content": prompt}]
     )
-    
+
+    # Strip any markdown formatting Claude might add
     response_text = message.content[0].text.strip()
     response_text = re.sub(r'^```json\s*', '', response_text)
     response_text = re.sub(r'^```\s*', '', response_text)
     response_text = re.sub(r'\s*```$', '', response_text)
     response_text = response_text.strip()
-    
+
     questions = json.loads(response_text)
     return questions
