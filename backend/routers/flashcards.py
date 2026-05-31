@@ -48,5 +48,9 @@ async def exam(request: ExamRequest):
             "num_questions": len(questions),
             "questions": questions
         }
+    except HTTPException:
+        raise
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
