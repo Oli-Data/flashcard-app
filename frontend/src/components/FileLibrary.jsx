@@ -29,18 +29,45 @@ function FileLibrary({ onFileSelect }) {
     }
   }
 
-  if (loading) return <p style={{ color: "#666" }}>Loading your files...</p>
-
-  if (files.length === 0) return null
+  if (loading || files.length === 0) return null
 
   return (
-    <div style={{ border: "1px solid #ccc", borderRadius: "8px", padding: "1rem", marginBottom: "1rem" }}>
-      <h3 style={{ marginTop: 0 }}>My Textbooks</h3>
+    <div style={{
+      background: "rgba(0, 180, 210, 0.06)",
+      backdropFilter: "blur(24px)",
+      border: "1px solid rgba(0, 220, 240, 0.12)",
+      borderRadius: "18px",
+      padding: "1.5rem",
+      marginBottom: "1.25rem",
+      position: "relative",
+      overflow: "hidden"
+    }}>
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: "1px",
+        background: "linear-gradient(90deg, transparent, rgba(0,220,240,0.3), transparent)"
+      }} />
+
+      <p style={{
+        fontFamily: "'Syne', sans-serif",
+        fontSize: "0.72rem",
+        fontWeight: 700,
+        color: "rgba(0, 220, 240, 0.5)",
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+        marginBottom: "1rem"
+      }}>My Textbooks</p>
+
       {files.map((file) => (
-        <div key={file.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0", borderBottom: "1px solid #eee" }}>
+        <div key={file.id} style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0.75rem 0",
+          borderBottom: "1px solid rgba(0,200,220,0.07)"
+        }}>
           <div>
-            <strong>{file.filename}</strong>
-            <span style={{ color: "#666", fontSize: "0.85rem", marginLeft: "0.5rem" }}>
+            <span style={{ fontWeight: 500, color: "#e0f0f8" }}>{file.filename}</span>
+            <span style={{ fontSize: "0.78rem", color: "rgba(200,235,245,0.3)", marginLeft: "0.5rem" }}>
               {file.chapters.length} chapters
             </span>
           </div>
@@ -52,13 +79,31 @@ function FileLibrary({ onFileSelect }) {
                 file_type: file.file_type,
                 chapters: file.chapters
               })}
-              style={{ padding: "0.3rem 0.75rem", background: "#6c63ff", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
+              style={{
+                padding: "0.3rem 0.75rem",
+                background: "rgba(0, 180, 220, 0.2)",
+                color: "#00e5ff",
+                border: "1px solid rgba(0, 220, 240, 0.3)",
+                borderRadius: "7px",
+                cursor: "pointer",
+                fontSize: "0.82rem",
+                fontFamily: "'DM Sans', sans-serif"
+              }}
             >
               Load
             </button>
             <button
               onClick={() => handleDelete(file.id)}
-              style={{ padding: "0.3rem 0.75rem", background: "#dc3545", color: "white", border: "none", borderRadius: "6px", cursor: "pointer" }}
+              style={{
+                padding: "0.3rem 0.75rem",
+                background: "rgba(239,68,68,0.1)",
+                color: "#f87171",
+                border: "1px solid rgba(239,68,68,0.2)",
+                borderRadius: "7px",
+                cursor: "pointer",
+                fontSize: "0.82rem",
+                fontFamily: "'DM Sans', sans-serif"
+              }}
             >
               Delete
             </button>
