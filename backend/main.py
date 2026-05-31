@@ -12,7 +12,11 @@ app = FastAPI(title="Flashcard Generator API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://flashcard-mrnsrjxq6-christian-olivares-rodriguezs-projects.vercel.app",
+        "https://flashcard-app.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
