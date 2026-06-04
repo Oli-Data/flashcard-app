@@ -43,10 +43,6 @@ async def create_game(
 
 @router.websocket("/ws/{game_code}/{username}")
 async def game_websocket(websocket: WebSocket, game_code: str, username: str):
-    """
-    WebSocket endpoint for real-time game communication.
-    Handles the full game lifecycle for each connected player.
-    """
     await websocket.accept()
 
     room = game_manager.get_room(game_code)
@@ -66,14 +62,26 @@ async def game_websocket(websocket: WebSocket, game_code: str, username: str):
 
     try:
         while True:
-            data = await websocket.receive_json()
-            msg_type = data.get("type")
+            try:
+                # Wait for message with timeout to send keepalive pings
+                data = await asyncio.wait_for(websocket.receive_json(), timeout=15)
+                msg_type = data.get("type")
 
-            if msg_type == "start_game" and username == room.host_username:
-                asyncio.create_task(start_game_loop(room))
+                if msg_type == "start_game" and username == room.host_username:
+                    asyncio.create_task(start_game_loop(room))
 
-            elif msg_type == "submit_answer":
-                await handle_answer(room, username, data.get("answer_index"), data.get("time_taken"))
+                elif msg_type == "submit_answer":
+                    await handle_answer(room, username, data.get("answer_index"), data.get("time_taken"))
+
+                elif msg_type == "ping":
+                    await websocket.send_json({"type": "pong"})
+
+            except asyncio.TimeoutError:
+                # Send keepalive ping to prevent connection timeout
+                try:
+                    await websocket.send_json({"type": "ping"})
+                except Exception:
+                    break
 
     except WebSocketDisconnect:
         room.remove_player(username)

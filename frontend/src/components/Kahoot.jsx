@@ -105,9 +105,8 @@ function Kahoot({ fileData, onExit }) {
         setShowLeaderboard(true)
         break
 
-      case "game_over":
-        setFinalLeaderboard(data.leaderboard)
-        setMode("results")
+    case "ping":
+        if (wsRef.current) wsRef.current.send(JSON.stringify({ type: "pong" }))
         break
 
       case "error":
