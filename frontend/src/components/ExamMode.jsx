@@ -287,7 +287,7 @@ function ExamMode({ fileData, onExit }) {
                       #{entry.rank}
                     </span>
                     <span style={{ color: "#e8f4f8", fontSize: "0.88rem" }}>
-                      {entry.email.split("@")[0]}
+                      {entry.username}
                     </span>
                   </div>
                   <span style={{

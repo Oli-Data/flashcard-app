@@ -624,10 +624,11 @@ export default function App() {
           <ExamMode fileData={fileData} onExit={() => setExamMode(false)} />
         )}
 
-        {fileData && !examMode && (
+        {fileData && !examMode && !kahootMode && (
           <ChapterSelect
             fileData={fileData}
             onExamMode={() => setExamMode(true)}
+            onKahoot={() => setKahootMode(true)}
             onGenerate={(cards) => {
               setFlashcards(cards)
               setCurrentCard(0)
@@ -635,6 +636,10 @@ export default function App() {
               fetchSavedSets()
             }}
           />
+        )}
+
+        {kahootMode && (
+          <Kahoot fileData={fileData} onExit={() => setKahootMode(false)} />
         )}
 
         {flashcards.length > 0 && !examMode && (
