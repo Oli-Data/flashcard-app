@@ -211,7 +211,7 @@ function Auth() {
       <style>{styles}</style>
       <div className="auth-body">
         <div className="auth-card">
-          <div className="auth-logo">Lumnitudy</div>
+          <div className="auth-logo">Lumitudy</div>
           <p className="auth-tagline">AI-powered flashcards from your textbooks</p>
 
           <div className="auth-tabs">

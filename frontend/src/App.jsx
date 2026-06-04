@@ -449,7 +449,7 @@ export default function App() {
       <div className="app-container">
 
         <header className="header">
-          <div className="logo">Lumnitudy</div>
+          <div className="logo">Lumitudy</div>
           <div className="header-actions">
             <span className="user-email">{username}</span>
             <button className="btn btn-ghost" onClick={() => { setShowSaved(!showSaved); fetchSavedSets() }}>
