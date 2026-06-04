@@ -100,9 +100,11 @@ function Kahoot({ fileData, onExit }) {
         break
 
       case "question_result":
+        console.log("question_result received:", data)
         clearInterval(timerRef.current)
         setLeaderboard(data.leaderboard)
         setShowLeaderboard(true)
+        setIsLastQuestion(data.is_last)
         break
 
     case "ping":
@@ -374,8 +376,8 @@ function Kahoot({ fileData, onExit }) {
             </div>
           ))}
           <p style={{ textAlign: "center", color: "rgba(200,235,245,0.3)", fontSize: "0.82rem", marginTop: "0.75rem" }}>
-            Next question coming up...
-          </p>
+            {isLastQuestion ? "Game ending..." : "Next question coming up..."}
+            </p> 
         </div>
       )
     }
