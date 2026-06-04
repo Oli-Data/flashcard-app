@@ -7,6 +7,7 @@ import Auth from "./components/Auth"
 import ExamMode from "./components/ExamMode"
 import FileLibrary from "./components/FileLibrary"
 import Friends from "./components/Friends"
+import Kahoot from "./components/Kahoot"
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
@@ -477,6 +478,7 @@ export default function App() {
   const [isAnimating, setIsAnimating] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef(null)
+  const [kahootMode, setKahootMode] = useState(false)
 
   useEffect(() => {
     if (user) fetchSavedSets()

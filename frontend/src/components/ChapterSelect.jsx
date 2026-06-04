@@ -1,7 +1,7 @@
 import { useState } from "react"
 import axios from "axios"
 
-function ChapterSelect({ fileData, onGenerate, onExamMode }) {
+function ChapterSelect({ fileData, onGenerate, onExamMode, onKahoot }) {
   const [selectedChapter, setSelectedChapter] = useState(fileData.chapters[0])
   const [numCards, setNumCards] = useState(10)
   const [loading, setLoading] = useState(false)
@@ -158,8 +158,26 @@ function ChapterSelect({ fileData, onGenerate, onExamMode }) {
         paddingTop: "1rem",
         borderTop: "1px solid rgba(0,220,240,0.08)",
         display: "flex",
-        justifyContent: "flex-end"
+        justifyContent: "flex-end",
+        gap: "0.5rem"
       }}>
+        <button
+          onClick={onKahoot}
+          style={{
+            padding: "0.6rem 1.4rem",
+            background: "linear-gradient(135deg, rgba(234,179,8,0.8), rgba(249,115,22,0.8))",
+            color: "white",
+            border: "1px solid rgba(255,200,100,0.3)",
+            borderRadius: "9px",
+            cursor: "pointer",
+            fontSize: "0.88rem",
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 500,
+            transition: "all 0.2s"
+          }}
+        >
+          🎮 Kahoot
+        </button>
         <button
           onClick={onExamMode}
           style={{

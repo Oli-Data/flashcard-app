@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import upload, flashcards, auth, sets, scores, friends
 from dotenv import load_dotenv
 from database import create_tables
+from routers import upload, flashcards, auth, sets, scores, friends, game
 
 # Load environment variables from .env file
 load_dotenv()
@@ -34,6 +35,7 @@ app.include_router(auth.router)
 app.include_router(sets.router)
 app.include_router(scores.router)
 app.include_router(friends.router)
+app.include_router(game.router)
 
 @app.get("/")
 def root():
