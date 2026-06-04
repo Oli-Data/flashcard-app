@@ -5,7 +5,7 @@ from datetime import datetime
 import random
 import string
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./flashcards.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///./flashcards_v2.db"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
