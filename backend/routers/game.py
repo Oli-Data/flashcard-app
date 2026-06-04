@@ -126,9 +126,12 @@ async def handle_answer(room, username: str, answer_index: int, time_taken: floa
     """Process a player's answer and calculate points"""
     if username not in room.players:
         return
-
+    
     player = room.players[username]
     if player.answered:
+        return
+    
+    if room.state != "playing":
         return
 
     player.answered = True
@@ -137,7 +140,9 @@ async def handle_answer(room, username: str, answer_index: int, time_taken: floa
     player.last_answer_correct = correct
 
     if correct:
-        time_bonus = max(0, room.time_limit - (time_taken or room.time_limit))
+        # Clamp time_taken to valid range
+        time_taken = max(0, min(time_taken or room.time_limit, room.time_limit))
+        time_bonus = room.time_limit - time_taken
         points = int(500 + (time_bonus / room.time_limit) * 500)
         player.score += points
     else:
