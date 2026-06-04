@@ -24,6 +24,7 @@ function Kahoot({ fileData, onExit }) {
   const [numQuestions, setNumQuestions] = useState(10)
   const [selectedChapter, setSelectedChapter] = useState(fileData?.chapters[0])
   const [totalScore, setTotalScore] = useState(0)
+  const [isLastQuestion, setIsLastQuestion] = useState(false)
 
   const wsRef = useRef(null)
   const timerRef = useRef(null)
