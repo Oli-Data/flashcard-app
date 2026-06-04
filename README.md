@@ -1,14 +1,14 @@
-# Lumitodee
+# Lumnitudy
 
 **AI-powered flashcard generator that transforms any textbook into a personalized study session.**
 
-🔗 **Live App:** [lumitodee.vercel.app](https://lumitodee.vercel.app)
+🔗 **Live App:** [Lumnitudy.vercel.app](https://Lumnitudy.vercel.app)
 
 ---
 
 ## Overview
 
-Lumitodee allows students to upload PDF, DOCX, or EPUB textbooks and instantly generate AI-powered flashcards from any chapter. Each flashcard includes a source quote from the original text, so users can verify the AI isn't hallucinating. The app also features a multiple choice exam mode for active recall practice.
+Lumnitudy allows students to upload PDF, DOCX, or EPUB textbooks and instantly generate AI-powered flashcards from any chapter. Each flashcard includes a source quote from the original text, so users can verify the AI isn't hallucinating. The app also features a multiple choice exam mode for active recall practice.
 
 ---
 

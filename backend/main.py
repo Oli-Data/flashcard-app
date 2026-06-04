@@ -12,7 +12,7 @@ load_dotenv()
 # Create database tables on startup
 create_tables()
 
-app = FastAPI(title="Lumitodee API")
+app = FastAPI(title="Lumnitudy API")
 
 # Allow requests from frontend origins
 app.add_middleware(
@@ -21,7 +21,7 @@ app.add_middleware(
         "http://localhost:5173",
         "https://flashcard-mrnsrjxq6-christian-olivares-rodriguezs-projects.vercel.app",
         "https://flashcard-app.vercel.app",
-        "https://lumitodee.vercel.app",
+        "https://Lumnitudy.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -38,4 +38,4 @@ app.include_router(friends.router)
 
 @app.get("/")
 def root():
-    return {"message": "Lumitodee API is running"}
+    return {"message": "Lumnitudy API is running"}
