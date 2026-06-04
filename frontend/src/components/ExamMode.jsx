@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 
 function ExamMode({ fileData, onExit }) {
@@ -13,6 +13,8 @@ function ExamMode({ fileData, onExit }) {
   const [results, setResults] = useState([])
   const [finished, setFinished] = useState(false)
   const [error, setError] = useState(null)
+  const [leaderboard, setLeaderboard] = useState([])
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
 
   const startExam = async () => {
     setLoading(true)
@@ -30,6 +32,7 @@ function ExamMode({ fileData, onExit }) {
       setFinished(false)
       setSelected(null)
       setSubmitted(false)
+      setShowLeaderboard(false)
     } catch (err) {
       setError("Failed to generate exam. Please try again.")
     } finally {
@@ -58,10 +61,33 @@ function ExamMode({ fileData, onExit }) {
   const handleNext = () => {
     if (currentQ + 1 >= questions.length) {
       setFinished(true)
+      submitScore()
+      fetchLeaderboard()
     } else {
       setCurrentQ(q => q + 1)
       setSelected(null)
       setSubmitted(false)
+    }
+  }
+
+  const submitScore = async () => {
+    try {
+      await axios.post(`${import.meta.env.VITE_API_URL}/scores/`, {
+        chapter: selectedChapter,
+        score: score + (selected === questions[currentQ].correct_index ? 1 : 0),
+        total: questions.length
+      })
+    } catch (err) {
+      console.error("Failed to submit score")
+    }
+  }
+
+  const fetchLeaderboard = async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/scores/${encodeURIComponent(selectedChapter)}`)
+      setLeaderboard(res.data)
+    } catch (err) {
+      console.error("Failed to fetch leaderboard")
     }
   }
 
@@ -130,29 +156,18 @@ function ExamMode({ fileData, onExit }) {
         <div style={topLine} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <p style={panelTitle}>Exam Mode</p>
-          <button
-            onClick={onExit}
-            style={{
-              padding: "0.4rem 1rem",
-              background: "rgba(255,255,255,0.05)",
-              color: "rgba(200,240,255,0.65)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: "0.85rem"
-            }}
-          >
-            Back
-          </button>
+          <button onClick={onExit} style={{
+            padding: "0.4rem 1rem",
+            background: "rgba(255,255,255,0.05)",
+            color: "rgba(200,240,255,0.65)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "8px", cursor: "pointer",
+            fontFamily: "'DM Sans', sans-serif", fontSize: "0.85rem"
+          }}>Back</button>
         </div>
 
         <label style={{ color: "rgba(200, 235, 245, 0.55)", fontSize: "0.88rem", display: "block", marginBottom: "0.4rem" }}>Chapter:</label>
-        <select
-          value={selectedChapter}
-          onChange={(e) => setSelectedChapter(e.target.value)}
-          style={{ marginBottom: "1rem" }}
-        >
+        <select value={selectedChapter} onChange={(e) => setSelectedChapter(e.target.value)} style={{ marginBottom: "1rem" }}>
           {fileData.chapters.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
@@ -162,31 +177,18 @@ function ExamMode({ fileData, onExit }) {
           Number of questions: {numQuestions}
         </label>
         <input
-          type="range"
-          min="5"
-          max="20"
-          value={numQuestions}
+          type="range" min="5" max="20" value={numQuestions}
           onChange={(e) => setNumQuestions(parseInt(e.target.value))}
           style={{ width: "100%", marginBottom: "1rem", accentColor: "#00e5ff" }}
         />
 
-        <button
-          onClick={startExam}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "0.8rem",
-            background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
-            color: "#e0f4ff",
-            border: "1px solid rgba(0,200,240,0.2)",
-            borderRadius: "10px",
-            cursor: "pointer",
-            fontSize: "0.95rem",
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 500,
-            transition: "all 0.2s"
-          }}
-        >
+        <button onClick={startExam} disabled={loading} style={{
+          width: "100%", padding: "0.8rem",
+          background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
+          color: "#e0f4ff", border: "1px solid rgba(0,200,240,0.2)",
+          borderRadius: "10px", cursor: "pointer", fontSize: "0.95rem",
+          fontFamily: "'DM Sans', sans-serif", fontWeight: 500, transition: "all 0.2s"
+        }}>
           {loading ? "Generating exam..." : "Start Exam"}
         </button>
         {error && <p style={{ color: "#f87171", marginTop: "0.75rem", fontSize: "0.88rem", textAlign: "center" }}>{error}</p>}
@@ -196,7 +198,9 @@ function ExamMode({ fileData, onExit }) {
 
   // Results screen
   if (finished) {
-    const percentage = Math.round((score / questions.length) * 100)
+    const finalScore = results.filter(r => r.correct).length
+    const percentage = Math.round((finalScore / questions.length) * 100)
+
     return (
       <div style={glassPanel}>
         <div style={topLine} />
@@ -204,34 +208,99 @@ function ExamMode({ fileData, onExit }) {
           Exam Complete
         </h2>
         <p style={{
-          textAlign: "center",
-          fontSize: "2.5rem",
-          fontWeight: "bold",
+          textAlign: "center", fontSize: "2.5rem", fontWeight: "bold",
           fontFamily: "'Syne', sans-serif",
           color: percentage >= 70 ? "#aff5d0" : "#f87171",
           marginBottom: "1.5rem"
         }}>
-          {score}/{questions.length} <span style={{ fontSize: "1.2rem", opacity: 0.7 }}>({percentage}%)</span>
+          {finalScore}/{questions.length} <span style={{ fontSize: "1.2rem", opacity: 0.7 }}>({percentage}%)</span>
         </p>
 
-        <p style={panelTitle}>Review</p>
-        {results.map((r, i) => (
-          <div key={i} style={{
-            padding: "0.85rem 1rem",
-            marginBottom: "0.5rem",
-            borderRadius: "10px",
-            background: r.correct ? "rgba(0,180,100,0.1)" : "rgba(239,68,68,0.1)",
-            border: `1px solid ${r.correct ? "rgba(0,220,120,0.2)" : "rgba(239,68,68,0.2)"}`
-          }}>
-            <p style={{ margin: 0, fontWeight: 500, color: "#e8f4f8", fontSize: "0.92rem" }}>{r.question}</p>
-            {!r.correct && (
-              <>
-                <p style={{ margin: "0.4rem 0 0", fontSize: "0.82rem", color: "#f87171" }}>Your answer: {r.selected}</p>
-                <p style={{ margin: "0.2rem 0 0", fontSize: "0.82rem", color: "#aff5d0" }}>Correct: {r.answer}</p>
-              </>
+        {/* Tab toggle */}
+        <div style={{ display: "flex", marginBottom: "1.25rem", background: "rgba(0,0,0,0.2)", borderRadius: "10px", padding: "0.25rem", border: "1px solid rgba(0,220,240,0.08)" }}>
+          <button
+            onClick={() => setShowLeaderboard(false)}
+            style={{
+              flex: 1, padding: "0.5rem", border: "none", borderRadius: "8px", cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", fontWeight: 500, transition: "all 0.2s",
+              background: !showLeaderboard ? "rgba(0, 180, 220, 0.2)" : "transparent",
+              color: !showLeaderboard ? "#00e5ff" : "rgba(200,240,255,0.35)"
+            }}
+          >
+            Review
+          </button>
+          <button
+            onClick={() => setShowLeaderboard(true)}
+            style={{
+              flex: 1, padding: "0.5rem", border: "none", borderRadius: "8px", cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", fontWeight: 500, transition: "all 0.2s",
+              background: showLeaderboard ? "rgba(0, 180, 220, 0.2)" : "transparent",
+              color: showLeaderboard ? "#00e5ff" : "rgba(200,240,255,0.35)"
+            }}
+          >
+            Leaderboard
+          </button>
+        </div>
+
+        {/* Review tab */}
+        {!showLeaderboard && (
+          <div>
+            <p style={panelTitle}>Review</p>
+            {results.map((r, i) => (
+              <div key={i} style={{
+                padding: "0.85rem 1rem", marginBottom: "0.5rem", borderRadius: "10px",
+                background: r.correct ? "rgba(0,180,100,0.1)" : "rgba(239,68,68,0.1)",
+                border: `1px solid ${r.correct ? "rgba(0,220,120,0.2)" : "rgba(239,68,68,0.2)"}`
+              }}>
+                <p style={{ margin: 0, fontWeight: 500, color: "#e8f4f8", fontSize: "0.92rem" }}>{r.question}</p>
+                {!r.correct && (
+                  <>
+                    <p style={{ margin: "0.4rem 0 0", fontSize: "0.82rem", color: "#f87171" }}>Your answer: {r.selected}</p>
+                    <p style={{ margin: "0.2rem 0 0", fontSize: "0.82rem", color: "#aff5d0" }}>Correct: {r.answer}</p>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Leaderboard tab */}
+        {showLeaderboard && (
+          <div>
+            <p style={panelTitle}>{selectedChapter} — Top Scores</p>
+            {leaderboard.length === 0 ? (
+              <p style={{ color: "rgba(200,235,245,0.3)", fontSize: "0.88rem" }}>No scores yet for this chapter.</p>
+            ) : (
+              leaderboard.map((entry, i) => (
+                <div key={i} style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "0.75rem 1rem", marginBottom: "0.5rem", borderRadius: "10px",
+                  background: i === 0 ? "rgba(255,200,0,0.08)" : "rgba(0,180,210,0.04)",
+                  border: `1px solid ${i === 0 ? "rgba(255,200,0,0.2)" : "rgba(0,220,240,0.08)"}`
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    <span style={{
+                      fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "1rem",
+                      color: i === 0 ? "#ffd700" : i === 1 ? "#c0c0c0" : i === 2 ? "#cd7f32" : "rgba(200,235,245,0.4)"
+                    }}>
+                      #{entry.rank}
+                    </span>
+                    <span style={{ color: "#e8f4f8", fontSize: "0.88rem" }}>
+                      {entry.email.split("@")[0]}
+                    </span>
+                  </div>
+                  <span style={{
+                    fontFamily: "'Syne', sans-serif", fontWeight: 700,
+                    color: entry.percentage >= 70 ? "#aff5d0" : "#f87171",
+                    fontSize: "0.95rem"
+                  }}>
+                    {entry.percentage}%
+                  </span>
+                </div>
+              ))
             )}
           </div>
-        ))}
+        )}
 
         <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
           <button
@@ -274,66 +343,45 @@ function ExamMode({ fileData, onExit }) {
           Question {currentQ + 1} of {questions.length}
         </span>
         <span style={{
-          color: "rgba(0,220,240,0.7)",
-          fontSize: "0.82rem",
-          fontFamily: "'Syne', sans-serif",
-          background: "rgba(0,200,220,0.08)",
-          border: "1px solid rgba(0,220,240,0.2)",
-          padding: "0.2rem 0.7rem",
-          borderRadius: "20px"
+          color: "rgba(0,220,240,0.7)", fontSize: "0.82rem", fontFamily: "'Syne', sans-serif",
+          background: "rgba(0,200,220,0.08)", border: "1px solid rgba(0,220,240,0.2)",
+          padding: "0.2rem 0.7rem", borderRadius: "20px"
         }}>
           Score: {score}
         </span>
       </div>
 
-      <p style={{
-        fontSize: "1.05rem",
-        fontWeight: 500,
-        color: "#e8f4f8",
-        marginBottom: "1.25rem",
-        lineHeight: 1.6,
-        fontFamily: "'DM Sans', sans-serif"
-      }}>
+      <p style={{ fontSize: "1.05rem", fontWeight: 500, color: "#e8f4f8", marginBottom: "1.25rem", lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif" }}>
         {q.question}
       </p>
 
       {q.options.map((option, index) => (
-        <button
-          key={index}
-          onClick={() => handleSelect(index)}
-          style={getOptionStyle(index)}
-        >
+        <button key={index} onClick={() => handleSelect(index)} style={getOptionStyle(index)}>
           <span style={{ opacity: 0.5, marginRight: "0.6rem" }}>{String.fromCharCode(65 + index)}.</span>
           {option}
         </button>
       ))}
 
       {selected !== null && !submitted && (
-        <button
-          onClick={handleSubmit}
-          style={{
-            width: "100%", padding: "0.8rem",
-            background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
-            color: "#e0f4ff", border: "1px solid rgba(0,200,240,0.2)",
-            borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
-            fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
-          }}
-        >
+        <button onClick={handleSubmit} style={{
+          width: "100%", padding: "0.8rem",
+          background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
+          color: "#e0f4ff", border: "1px solid rgba(0,200,240,0.2)",
+          borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
+          fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
+        }}>
           Submit Answer
         </button>
       )}
 
       {submitted && (
-        <button
-          onClick={handleNext}
-          style={{
-            width: "100%", padding: "0.8rem",
-            background: "linear-gradient(135deg, rgba(0,180,100,0.7), rgba(0,160,80,0.7))",
-            color: "#aff5d0", border: "1px solid rgba(0,220,120,0.3)",
-            borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
-            fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
-          }}
-        >
+        <button onClick={handleNext} style={{
+          width: "100%", padding: "0.8rem",
+          background: "linear-gradient(135deg, rgba(0,180,100,0.7), rgba(0,160,80,0.7))",
+          color: "#aff5d0", border: "1px solid rgba(0,220,120,0.3)",
+          borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
+          fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
+        }}>
           {currentQ + 1 >= questions.length ? "See Results" : "Next Question"}
         </button>
       )}

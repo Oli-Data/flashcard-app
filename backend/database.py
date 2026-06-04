@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -43,6 +43,18 @@ class UserFile(Base):
     file_path = Column(String)
     file_type = Column(String)
     chapters = Column(Text)  # JSON string of chapter names
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Score(Base):
+    """Stores exam scores per user per chapter"""
+    __tablename__ = "scores"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    user_email = Column(String)
+    chapter = Column(String, index=True)
+    score = Column(Integer)
+    total = Column(Integer)
+    percentage = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():
