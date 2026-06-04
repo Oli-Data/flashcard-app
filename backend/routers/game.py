@@ -118,7 +118,8 @@ async def start_game_loop(room):
         await room.broadcast({
             "type": "question_result",
             "correct_index": question["correct_index"],
-            "leaderboard": room.get_leaderboard()
+            "leaderboard": room.get_leaderboard(),
+            "is_last": i == len(room.questions) - 1
         })
 
         await asyncio.sleep(3)
