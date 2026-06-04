@@ -60,8 +60,9 @@ function ExamMode({ fileData, onExit }) {
 
   const handleNext = () => {
     if (currentQ + 1 >= questions.length) {
+      const finalScore = results.filter(r => r.correct).length + (selected === questions[currentQ].correct_index ? 1 : 0)
       setFinished(true)
-      submitScore()
+      submitScore(finalScore, questions.length)
       fetchLeaderboard()
     } else {
       setCurrentQ(q => q + 1)
@@ -70,15 +71,15 @@ function ExamMode({ fileData, onExit }) {
     }
   }
 
-  const submitScore = async () => {
+  const submitScore = async (finalScore, total) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/scores/`, {
         chapter: selectedChapter,
-        score: score + (selected === questions[currentQ].correct_index ? 1 : 0),
-        total: questions.length
+        score: finalScore,
+        total: total
       })
     } catch (err) {
-      console.error("Failed to submit score")
+    console.error("Failed to submit score")
     }
   }
 
