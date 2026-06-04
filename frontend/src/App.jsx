@@ -6,6 +6,7 @@ import ChapterSelect from "./components/ChapterSelect"
 import Auth from "./components/Auth"
 import ExamMode from "./components/ExamMode"
 import FileLibrary from "./components/FileLibrary"
+import Friends from "./components/Friends"
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
@@ -378,7 +379,7 @@ function SourceQuote({ quote }) {
 }
 
 export default function App() {
-  const { user, logout } = useAuth()
+  const { user, username, friendCode, logout } = useAuth()
   const [fileData, setFileData] = useState(null)
   const [flashcards, setFlashcards] = useState([])
   const [currentCard, setCurrentCard] = useState(0)
@@ -388,6 +389,7 @@ export default function App() {
   const [examMode, setExamMode] = useState(false)
   const [slideAnim, setSlideAnim] = useState("")
   const [isAnimating, setIsAnimating] = useState(false)
+  const [showFriends, setShowFriends] = useState(false)
 
   useEffect(() => {
     if (user) fetchSavedSets()
@@ -449,9 +451,12 @@ export default function App() {
         <header className="header">
           <div className="logo">Lumitodee</div>
           <div className="header-actions">
-            <span className="user-email">{user}</span>
+            <span className="user-email">{username}</span>
             <button className="btn btn-ghost" onClick={() => { setShowSaved(!showSaved); fetchSavedSets() }}>
               {showSaved ? "Hide Sets" : "My Sets"}
+            </button>
+            <button className="btn btn-ghost" onClick={() => setShowFriends(!showFriends)}>
+              {showFriends ? "Hide Friends" : "Friends"}
             </button>
             <button className="btn btn-ghost" onClick={logout}>Logout</button>
           </div>
@@ -484,6 +489,7 @@ export default function App() {
             )}
           </div>
         )}
+        {showFriends && <Friends onClose={() => setShowFriends(false)} />}
 
         <Upload onUpload={setFileData} />
         <FileLibrary onFileSelect={setFileData} />

@@ -23,6 +23,7 @@ def submit_score(
     new_score = Score(
         user_id=current_user.id,
         user_email=current_user.email,
+        username=current_user.username,
         chapter=request.chapter,
         score=request.score,
         total=request.total,
@@ -34,26 +35,21 @@ def submit_score(
 
 @router.get("/{chapter}")
 def get_leaderboard(chapter: str, db: Session = Depends(get_db)):
-    """
-    Get the top 10 scores for a specific chapter.
-    Returns best score per user, sorted by percentage descending.
-    """
-    # Get all scores for this chapter
+    """Get top 10 scores for a specific chapter, best score per user"""
     all_scores = db.query(Score).filter(Score.chapter == chapter).all()
 
-    # Keep only the best score per user
     best_scores = {}
     for s in all_scores:
-        if s.user_email not in best_scores or s.percentage > best_scores[s.user_email].percentage:
-            best_scores[s.user_email] = s
+        key = s.username or s.user_email
+        if key not in best_scores or s.percentage > best_scores[key].percentage:
+            best_scores[key] = s
 
-    # Sort by percentage and return top 10
     sorted_scores = sorted(best_scores.values(), key=lambda x: x.percentage, reverse=True)[:10]
 
     return [
         {
             "rank": i + 1,
-            "email": s.user_email,
+            "username": s.username or s.user_email.split("@")[0],
             "score": s.score,
             "total": s.total,
             "percentage": s.percentage,

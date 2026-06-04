@@ -3,16 +3,12 @@ import axios from "axios"
 
 const AuthContext = createContext()
 
-/**
- * AuthProvider wraps the app and provides authentication state
- * and methods (login, register, logout) to all child components.
- */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  // Persist token in localStorage so user stays logged in on refresh
+  const [username, setUsername] = useState(localStorage.getItem("username"))
+  const [friendCode, setFriendCode] = useState(localStorage.getItem("friend_code"))
   const [token, setToken] = useState(localStorage.getItem("token"))
 
-  // Set Authorization header whenever token changes
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`
@@ -23,38 +19,46 @@ export function AuthProvider({ children }) {
     const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password })
     const t = res.data.access_token
     localStorage.setItem("token", t)
+    localStorage.setItem("username", res.data.username)
+    localStorage.setItem("friend_code", res.data.friend_code)
     setToken(t)
     setUser(email)
+    setUsername(res.data.username)
+    setFriendCode(res.data.friend_code)
     axios.defaults.headers.common["Authorization"] = `Bearer ${t}`
   }
 
-  const register = async (email, password) => {
-    const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, { email, password })
+  const register = async (email, username, password) => {
+    const res = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, { email, username, password })
     const t = res.data.access_token
     localStorage.setItem("token", t)
+    localStorage.setItem("username", res.data.username)
+    localStorage.setItem("friend_code", res.data.friend_code)
     setToken(t)
     setUser(email)
+    setUsername(res.data.username)
+    setFriendCode(res.data.friend_code)
     axios.defaults.headers.common["Authorization"] = `Bearer ${t}`
   }
 
   const logout = () => {
-    // Clear token from storage and remove Authorization header
     localStorage.removeItem("token")
+    localStorage.removeItem("username")
+    localStorage.removeItem("friend_code")
     setToken(null)
     setUser(null)
+    setUsername(null)
+    setFriendCode(null)
     delete axios.defaults.headers.common["Authorization"]
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout }}>
+    <AuthContext.Provider value={{ user, username, friendCode, token, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-/**
- * useAuth hook for accessing auth context in any component
- */
 export function useAuth() {
   return useContext(AuthContext)
 }

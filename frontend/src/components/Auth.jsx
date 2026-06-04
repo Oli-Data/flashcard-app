@@ -5,7 +5,6 @@ const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
   html, body { margin: 0; padding: 0; }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   .auth-body {
@@ -32,9 +31,7 @@ const styles = `
     border: 1px solid rgba(0, 220, 240, 0.15);
     border-radius: 24px;
     padding: 2.5rem;
-    box-shadow: 
-      0 20px 60px rgba(0,0,0,0.4),
-      inset 0 1px 0 rgba(255,255,255,0.06);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
     position: relative;
     overflow: hidden;
     margin: 2rem;
@@ -101,9 +98,7 @@ const styles = `
     color: rgba(200,240,255,0.35);
   }
 
-  .auth-tab.inactive:hover {
-    color: rgba(200,240,255,0.6);
-  }
+  .auth-tab.inactive:hover { color: rgba(200,240,255,0.6); }
 
   .auth-input {
     width: 100%;
@@ -125,9 +120,7 @@ const styles = `
     box-shadow: 0 0 0 3px rgba(0, 200, 240, 0.08);
   }
 
-  .auth-input::placeholder {
-    color: rgba(200,235,245,0.25);
-  }
+  .auth-input::placeholder { color: rgba(200,235,245,0.25); }
 
   .auth-btn {
     width: 100%;
@@ -145,16 +138,8 @@ const styles = `
     margin-top: 0.25rem;
   }
 
-  .auth-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(0,150,220,0.3);
-  }
-
-  .auth-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
-    transform: none;
-  }
+  .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,150,220,0.3); }
+  .auth-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
 
   .auth-error {
     color: #f87171;
@@ -195,6 +180,7 @@ function Auth() {
   const { login, register } = useAuth()
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -206,7 +192,12 @@ function Auth() {
       if (isLogin) {
         await login(email, password)
       } else {
-        await register(email, password)
+        if (!username.trim()) {
+          setError("Username is required")
+          setLoading(false)
+          return
+        }
+        await register(email, username, password)
       }
     } catch (err) {
       setError(err.response?.data?.detail || "Something went wrong")
@@ -224,16 +215,10 @@ function Auth() {
           <p className="auth-tagline">AI-powered flashcards from your textbooks</p>
 
           <div className="auth-tabs">
-            <button
-              className={`auth-tab ${isLogin ? "active" : "inactive"}`}
-              onClick={() => setIsLogin(true)}
-            >
+            <button className={`auth-tab ${isLogin ? "active" : "inactive"}`} onClick={() => setIsLogin(true)}>
               Login
             </button>
-            <button
-              className={`auth-tab ${!isLogin ? "active" : "inactive"}`}
-              onClick={() => setIsLogin(false)}
-            >
+            <button className={`auth-tab ${!isLogin ? "active" : "inactive"}`} onClick={() => setIsLogin(false)}>
               Sign Up
             </button>
           </div>
@@ -246,6 +231,16 @@ function Auth() {
             onChange={(e) => setEmail(e.target.value)}
           />
 
+          {!isLogin && (
+            <input
+              className="auth-input"
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          )}
+
           <input
             className="auth-input"
             type="password"
@@ -255,11 +250,7 @@ function Auth() {
             onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           />
 
-          <button
-            className="auth-btn"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
+          <button className="auth-btn" onClick={handleSubmit} disabled={loading}>
             {loading ? "Loading..." : isLogin ? "Login" : "Create Account"}
           </button>
 
@@ -280,9 +271,7 @@ function Auth() {
             </div>
           </div>
 
-          <p className="auth-footer">
-            Your study materials are private and secure.
-          </p>
+          <p className="auth-footer">Your study materials are private and secure.</p>
         </div>
       </div>
     </>
