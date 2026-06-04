@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import { useAuth } from "./context/AuthContext"
 import Upload from "./components/Upload"
@@ -28,7 +28,7 @@ const styles = `
   .app-container {
     max-width: 780px;
     margin: 0 auto;
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 1rem;
   }
 
   .header {
@@ -36,39 +36,116 @@ const styles = `
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
-    padding: 0.85rem 1.25rem;
+    padding: 0.75rem 1.25rem;
     background: rgba(0, 200, 220, 0.06);
     backdrop-filter: blur(20px);
     border: 1px solid rgba(0, 220, 240, 0.15);
     border-radius: 14px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
   }
 
   .logo {
     font-family: 'Syne', sans-serif;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 800;
     background: linear-gradient(135deg, #00e5ff, #40a9ff, #a78bfa);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    white-space: nowrap;
   }
 
-  .header-actions {
+  .profile-btn {
     display: flex;
-    gap: 0.65rem;
     align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.9rem;
+    background: rgba(0, 180, 220, 0.1);
+    border: 1px solid rgba(0, 220, 240, 0.2);
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: rgba(200, 240, 255, 0.8);
+    transition: all 0.2s;
+    white-space: nowrap;
   }
 
-  .user-email {
-    color: rgba(200, 240, 255, 0.4);
-    font-size: 0.82rem;
+  .profile-btn:hover {
+    background: rgba(0, 180, 220, 0.2);
+    color: #00e5ff;
+  }
+
+  .profile-avatar {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #00e5ff, #a78bfa);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0a1628;
+    flex-shrink: 0;
+  }
+
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: rgba(10, 22, 40, 0.95);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(0, 220, 240, 0.15);
+    border-radius: 14px;
+    padding: 0.5rem;
+    min-width: 200px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    z-index: 100;
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: rgba(200, 240, 255, 0.7);
+    transition: all 0.15s;
+    text-align: left;
+  }
+
+  .dropdown-item:hover {
+    background: rgba(0, 180, 220, 0.1);
+    color: #00e5ff;
+  }
+
+  .dropdown-item.danger {
+    color: rgba(248, 113, 113, 0.7);
+  }
+
+  .dropdown-item.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+  }
+
+  .dropdown-divider {
+    height: 1px;
+    background: rgba(0, 220, 240, 0.08);
+    margin: 0.35rem 0;
   }
 
   .hero {
     text-align: center;
-    padding: 3rem 1rem 2.5rem;
-    margin-bottom: 2rem;
+    padding: 2.5rem 1rem 2rem;
+    margin-bottom: 1.5rem;
   }
 
   .hero-eyebrow {
@@ -86,7 +163,7 @@ const styles = `
 
   .hero-title {
     font-family: 'Syne', sans-serif;
-    font-size: 2.2rem;
+    font-size: clamp(1.6rem, 5vw, 2.2rem);
     font-weight: 800;
     line-height: 1.15;
     margin-bottom: 1rem;
@@ -97,7 +174,7 @@ const styles = `
   }
 
   .hero-sub {
-    font-size: 1rem;
+    font-size: clamp(0.85rem, 2.5vw, 1rem);
     color: rgba(200, 235, 245, 0.55);
     max-width: 420px;
     margin: 0 auto;
@@ -224,8 +301,8 @@ const styles = `
     backdrop-filter: blur(30px);
     border: 1px solid rgba(0, 220, 240, 0.18);
     border-radius: 20px;
-    padding: 3rem 2.5rem;
-    min-height: 220px;
+    padding: 3rem 2rem;
+    min-height: 200px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -270,7 +347,7 @@ const styles = `
   .flashcard-inner.flipped .card-label { color: rgba(160, 120, 255, 0.6); }
 
   .card-text {
-    font-size: 1.15rem;
+    font-size: clamp(0.95rem, 2.5vw, 1.15rem);
     font-weight: 400;
     color: #e8f4f8;
     line-height: 1.65;
@@ -364,6 +441,14 @@ const styles = `
     display: block;
     margin-bottom: 0.4rem;
   }
+
+  @media (max-width: 480px) {
+    .app-container { padding: 1rem 0.75rem; }
+    .hero { padding: 1.5rem 0.5rem 1.25rem; }
+    .glass-panel { padding: 1.1rem; }
+    .flashcard-inner { padding: 2rem 1.25rem; min-height: 160px; }
+    .card-nav { gap: 0.75rem; }
+  }
 `
 
 function SourceQuote({ quote }) {
@@ -386,14 +471,27 @@ export default function App() {
   const [flipped, setFlipped] = useState(false)
   const [savedSets, setSavedSets] = useState([])
   const [showSaved, setShowSaved] = useState(false)
+  const [showFriends, setShowFriends] = useState(false)
   const [examMode, setExamMode] = useState(false)
   const [slideAnim, setSlideAnim] = useState("")
   const [isAnimating, setIsAnimating] = useState(false)
-  const [showFriends, setShowFriends] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     if (user) fetchSavedSets()
   }, [user])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
 
   const fetchSavedSets = async () => {
     try {
@@ -430,6 +528,7 @@ export default function App() {
     setCurrentCard(0)
     setFlipped(false)
     setShowSaved(false)
+    setDropdownOpen(false)
   }
 
   const deleteSet = async (id) => {
@@ -450,15 +549,39 @@ export default function App() {
 
         <header className="header">
           <div className="logo">Lumitudy</div>
-          <div className="header-actions">
-            <span className="user-email">{username}</span>
-            <button className="btn btn-ghost" onClick={() => { setShowSaved(!showSaved); fetchSavedSets() }}>
-              {showSaved ? "Hide Sets" : "My Sets"}
+
+          <div ref={dropdownRef} style={{ position: "relative" }}>
+            <button
+              className="profile-btn"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              <div className="profile-avatar">
+                {username ? username[0].toUpperCase() : "?"}
+              </div>
+              <span>{username}</span>
+              <span style={{ opacity: 0.4, fontSize: "0.7rem" }}>▾</span>
             </button>
-            <button className="btn btn-ghost" onClick={() => setShowFriends(!showFriends)}>
-              {showFriends ? "Hide Friends" : "Friends"}
-            </button>
-            <button className="btn btn-ghost" onClick={logout}>Logout</button>
+
+            {dropdownOpen && (
+              <div className="dropdown">
+                <button
+                  className="dropdown-item"
+                  onClick={() => { setShowSaved(!showSaved); fetchSavedSets(); setDropdownOpen(false) }}
+                >
+                  📚 My Sets
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => { setShowFriends(!showFriends); setDropdownOpen(false) }}
+                >
+                  👥 Friends
+                </button>
+                <div className="dropdown-divider" />
+                <button className="dropdown-item danger" onClick={logout}>
+                  ⎋ Logout
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -489,6 +612,7 @@ export default function App() {
             )}
           </div>
         )}
+
         {showFriends && <Friends onClose={() => setShowFriends(false)} />}
 
         <Upload onUpload={setFileData} />
