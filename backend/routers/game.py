@@ -70,7 +70,7 @@ async def game_websocket(websocket: WebSocket, game_code: str, username: str):
             msg_type = data.get("type")
 
             if msg_type == "start_game" and username == room.host_username:
-                await start_game_loop(room)
+                asyncio.create_task(start_game_loop(room))
 
             elif msg_type == "submit_answer":
                 await handle_answer(room, username, data.get("answer_index"), data.get("time_taken"))
