@@ -41,6 +41,60 @@ async def create_game(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class UpdateQuestionsRequest(BaseModel):
+    """Request model for updating game questions from lobby"""
+    file_path: str = None
+    chapter: str = None
+    num_questions: int = 10
+    cards: list = None  # for using saved sets
+
+@router.post("/{game_code}/update-questions")
+async def update_questions(
+    game_code: str,
+    request: UpdateQuestionsRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update the questions for an existing game room.
+    Host can generate new questions from a file or use a saved set.
+    """
+    room = game_manager.get_room(game_code)
+    if not room:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    if room.host_username != current_user.username:
+        raise HTTPException(status_code=403, detail="Only the host can update questions")
+
+    if request.cards:
+        # Use saved flashcard set — convert cards to exam format
+        questions = []
+        for card in request.cards[:request.num_questions]:
+            questions.append({
+                "question": card.get("question"),
+                "options": [card.get("answer"), "Incorrect option A", "Incorrect option B", "Incorrect option C"],
+                "correct_index": 0
+            })
+        room.questions = questions
+    elif request.file_path and request.chapter:
+        # Generate new questions from uploaded file
+        chapters = parse_file(request.file_path)
+        if request.chapter not in chapters:
+            raise HTTPException(status_code=404, detail="Chapter not found")
+        chapter_text = chapters[request.chapter]
+        room.questions = generate_exam(chapter_text, request.num_questions)
+    else:
+        raise HTTPException(status_code=400, detail="Must provide either cards or file_path and chapter")
+
+    # Notify all players that questions were updated
+    await room.broadcast({
+        "type": "questions_updated",
+        "num_questions": len(room.questions),
+        "source": "saved_set" if request.cards else "generated"
+    })
+
+    return {"message": "Questions updated", "num_questions": len(room.questions)}
+
 @router.websocket("/ws/{game_code}/{username}")
 async def game_websocket(websocket: WebSocket, game_code: str, username: str):
     await websocket.accept()
