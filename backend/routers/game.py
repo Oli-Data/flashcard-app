@@ -124,12 +124,14 @@ async def start_game_loop(room):
 
         await asyncio.sleep(3)
 
-    room.state = "finished"
+    room.state = "lobby"
     await room.broadcast({
         "type": "game_over",
         "leaderboard": room.get_leaderboard()
     })
-    game_manager.delete_room(room.game_code)
+    for player in room.players.values():
+        player.score = 0
+        player.answered = False
 
 async def handle_answer(room, username: str, answer_index: int, time_taken: float):
     """Process a player's answer and calculate points"""
