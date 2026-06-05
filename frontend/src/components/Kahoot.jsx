@@ -111,7 +111,7 @@ function Kahoot({ fileData, onExit }) {
     case "ping":
         if (wsRef.current) wsRef.current.send(JSON.stringify({ type: "pong" }))
         break
-      
+
     case "game_over":
         clearInterval(timerRef.current)
         setShowLeaderboard(false)
@@ -526,11 +526,47 @@ function Kahoot({ fileData, onExit }) {
           </div>
         ))}
 
-        <button onClick={onExit} style={{ ...btnPrimary, marginTop: "1rem" }}>
-          Back to Study
-        </button>
+        <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+          <button
+            onClick={() => {
+              setMode("lobby")
+              setFinalLeaderboard(null)
+              setLeaderboard([])
+              setQuestion(null)
+              setSelected(null)
+              setAnswered(false)
+              setAnswerResult(null)
+              setTotalScore(0)
+              setIsLastQuestion(false)
+            }}
+            style={{
+              ...btnPrimary,
+              marginBottom: 0,
+              flex: 1,
+              background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))"
+            }}
+          >
+            🔄 Back to Lobby
+          </button>
+          <button
+            onClick={onExit}
+            style={{
+              flex: 1,
+              padding: "0.8rem",
+              background: "rgba(255,255,255,0.05)",
+              color: "rgba(200,240,255,0.65)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "10px",
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 500
+            }}
+          >
+            Exit
+          </button>
+        </div>
       </div>
-    )
+      )
   }
 
   return null
