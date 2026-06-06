@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext"
 
 function Kahoot({ fileData, onExit }) {
   const { username } = useAuth()
-  const [mode, setMode] = useState("menu") // menu, lobby, game, results
+  const [mode, setMode] = useState("menu")
   const [gameCode, setGameCode] = useState("")
   const [joinCode, setJoinCode] = useState("")
   const [players, setPlayers] = useState([])
@@ -25,6 +25,11 @@ function Kahoot({ fileData, onExit }) {
   const [selectedChapter, setSelectedChapter] = useState(fileData?.chapters[0])
   const [totalScore, setTotalScore] = useState(0)
   const [isLastQuestion, setIsLastQuestion] = useState(false)
+  const [lobbyTab, setLobbyTab] = useState("generate")
+  const [savedSets, setSavedSets] = useState([])
+  const [updatingQuestions, setUpdatingQuestions] = useState(false)
+  const [questionsReady, setQuestionsReady] = useState(false)
+  const [questionsCount, setQuestionsCount] = useState(0)
 
   const wsRef = useRef(null)
   const timerRef = useRef(null)
@@ -46,6 +51,7 @@ function Kahoot({ fileData, onExit }) {
       setMode("lobby")
       setIsHost(asHost)
       setGameCode(code)
+      axios.get(`${import.meta.env.VITE_API_URL}/sets/`).then(res => setSavedSets(res.data)).catch(() => {})
     }
 
     ws.onmessage = (event) => {
@@ -82,7 +88,6 @@ function Kahoot({ fileData, onExit }) {
         questionStartRef.current = Date.now()
         setMode("game")
 
-        // Start countdown timer
         if (timerRef.current) clearInterval(timerRef.current)
         timerRef.current = setInterval(() => {
           setTimeLeft(prev => {
@@ -108,11 +113,16 @@ function Kahoot({ fileData, onExit }) {
         setIsLastQuestion(data.is_last)
         break
 
-    case "ping":
+      case "questions_updated":
+        setQuestionsReady(true)
+        setQuestionsCount(data.num_questions)
+        break
+
+      case "ping":
         if (wsRef.current) wsRef.current.send(JSON.stringify({ type: "pong" }))
         break
 
-    case "game_over":
+      case "game_over":
         clearInterval(timerRef.current)
         setShowLeaderboard(false)
         setFinalLeaderboard(data.leaderboard)
@@ -174,6 +184,40 @@ function Kahoot({ fileData, onExit }) {
     }
   }
 
+  const updateQuestions = async () => {
+    if (!fileData) return
+    setUpdatingQuestions(true)
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/game/${gameCode}/update-questions`, {
+        file_path: fileData.file_path,
+        chapter: selectedChapter,
+        num_questions: numQuestions
+      })
+      setQuestionsReady(true)
+      setQuestionsCount(res.data.num_questions)
+    } catch (err) {
+      setError("Failed to update questions")
+    } finally {
+      setUpdatingQuestions(false)
+    }
+  }
+
+  const updateQuestionsFromSet = async (set) => {
+    setUpdatingQuestions(true)
+    try {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/game/${gameCode}/update-questions`, {
+        cards: set.cards,
+        num_questions: set.cards.length
+      })
+      setQuestionsReady(true)
+      setQuestionsCount(res.data.num_questions)
+    } catch (err) {
+      setError("Failed to update questions")
+    } finally {
+      setUpdatingQuestions(false)
+    }
+  }
+
   const glassPanel = {
     background: "rgba(0, 180, 210, 0.06)",
     backdropFilter: "blur(24px)",
@@ -232,7 +276,6 @@ function Kahoot({ fileData, onExit }) {
           }}>Back</button>
         </div>
 
-        {/* Host section */}
         {fileData && (
           <div style={{ marginBottom: "1.5rem" }}>
             <p style={panelTitle}>Host a Game</p>
@@ -253,7 +296,6 @@ function Kahoot({ fileData, onExit }) {
           </div>
         )}
 
-        {/* Join section */}
         <div>
           <p style={panelTitle}>Join a Game</p>
           <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -302,48 +344,147 @@ function Kahoot({ fileData, onExit }) {
           <p style={{ color: "rgba(200,235,245,0.3)", fontSize: "0.8rem", marginTop: "0.25rem" }}>Share this code with your friends</p>
         </div>
 
-        <p style={panelTitle}>Players ({players.length})</p>
-        <div style={{ marginBottom: "1.25rem" }}>
-          {players.map((p, i) => (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", gap: "0.75rem",
-              padding: "0.6rem 0",
-              borderBottom: "1px solid rgba(0,200,220,0.07)"
-            }}>
-              <div style={{
-                width: "28px", height: "28px",
-                background: "linear-gradient(135deg, #00e5ff, #a78bfa)",
-                borderRadius: "50%",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "0.75rem", fontWeight: 700, color: "#0a1628", flexShrink: 0
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: "200px" }}>
+            <p style={panelTitle}>Players ({players.length})</p>
+            {players.map((p, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: "0.75rem",
+                padding: "0.6rem 0",
+                borderBottom: "1px solid rgba(0,200,220,0.07)"
               }}>
-                {p[0].toUpperCase()}
+                <div style={{
+                  width: "28px", height: "28px",
+                  background: "linear-gradient(135deg, #00e5ff, #a78bfa)",
+                  borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "0.75rem", fontWeight: 700, color: "#0a1628", flexShrink: 0
+                }}>
+                  {p[0].toUpperCase()}
+                </div>
+                <span style={{ color: "#e0f0f8", fontSize: "0.9rem" }}>
+                  {p}
+                  {i === 0 && <span style={{ color: "rgba(0,220,240,0.5)", fontSize: "0.75rem", marginLeft: "0.4rem" }}>HOST</span>}
+                </span>
               </div>
-              <span style={{ color: "#e0f0f8", fontSize: "0.9rem" }}>
-                {p} {p === gameCode.split("-")[0] ? "" : ""}
-                {players[0] === p ? <span style={{ color: "rgba(0,220,240,0.5)", fontSize: "0.75rem", marginLeft: "0.4rem" }}>HOST</span> : ""}
-              </span>
+            ))}
+          </div>
+
+          {isHost && (
+            <div style={{ flex: 1, minWidth: "200px" }}>
+              <p style={panelTitle}>Select Questions</p>
+
+              <div style={{ display: "flex", marginBottom: "0.75rem", background: "rgba(0,0,0,0.2)", borderRadius: "8px", padding: "0.2rem", border: "1px solid rgba(0,220,240,0.08)" }}>
+                <button
+                  onClick={() => setLobbyTab("generate")}
+                  style={{
+                    flex: 1, padding: "0.4rem", border: "none", borderRadius: "6px", cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem", transition: "all 0.2s",
+                    background: lobbyTab === "generate" ? "rgba(0,180,220,0.2)" : "transparent",
+                    color: lobbyTab === "generate" ? "#00e5ff" : "rgba(200,240,255,0.35)"
+                  }}
+                >Generate</button>
+                <button
+                  onClick={() => setLobbyTab("saved")}
+                  style={{
+                    flex: 1, padding: "0.4rem", border: "none", borderRadius: "6px", cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif", fontSize: "0.8rem", transition: "all 0.2s",
+                    background: lobbyTab === "saved" ? "rgba(0,180,220,0.2)" : "transparent",
+                    color: lobbyTab === "saved" ? "#00e5ff" : "rgba(200,240,255,0.35)"
+                  }}
+                >Saved Sets</button>
+              </div>
+
+              {lobbyTab === "generate" && fileData && (
+                <div>
+                  <select
+                    value={selectedChapter}
+                    onChange={(e) => setSelectedChapter(e.target.value)}
+                    style={{ marginBottom: "0.5rem", fontSize: "0.82rem" }}
+                  >
+                    {fileData.chapters.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <label style={{ color: "rgba(200,235,245,0.55)", fontSize: "0.82rem", display: "block", marginBottom: "0.25rem" }}>
+                    Questions: {numQuestions}
+                  </label>
+                  <input type="range" min="5" max="20" value={numQuestions}
+                    onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+                    style={{ width: "100%", marginBottom: "0.5rem", accentColor: "#00e5ff" }}
+                  />
+                  <button
+                    onClick={updateQuestions}
+                    disabled={updatingQuestions}
+                    style={{
+                      width: "100%", padding: "0.6rem",
+                      background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
+                      color: "#e0f4ff", border: "1px solid rgba(0,200,240,0.2)",
+                      borderRadius: "8px", cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", fontWeight: 500
+                    }}
+                  >
+                    {updatingQuestions ? "Generating..." : "Set Questions"}
+                  </button>
+                </div>
+              )}
+
+              {lobbyTab === "saved" && (
+                <div>
+                  {savedSets.length === 0 ? (
+                    <p style={{ color: "rgba(200,235,245,0.25)", fontSize: "0.82rem" }}>No saved sets.</p>
+                  ) : (
+                    savedSets.map((set) => (
+                      <div key={set.id} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "0.5rem 0", borderBottom: "1px solid rgba(0,200,220,0.07)"
+                      }}>
+                        <div>
+                          <span style={{ color: "#e0f0f8", fontSize: "0.82rem" }}>{set.title}</span>
+                          <span style={{ color: "rgba(200,235,245,0.3)", fontSize: "0.75rem", marginLeft: "0.4rem" }}>{set.cards.length} cards</span>
+                        </div>
+                        <button
+                          onClick={() => updateQuestionsFromSet(set)}
+                          style={{
+                            padding: "0.25rem 0.6rem",
+                            background: "rgba(0,180,220,0.2)", color: "#00e5ff",
+                            border: "1px solid rgba(0,220,240,0.3)",
+                            borderRadius: "6px", cursor: "pointer",
+                            fontFamily: "'DM Sans', sans-serif", fontSize: "0.75rem"
+                          }}
+                        >Use</button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {questionsReady && (
+                <p style={{ color: "#aff5d0", fontSize: "0.8rem", marginTop: "0.5rem", textAlign: "center" }}>
+                  ✓ {questionsCount} questions ready
+                </p>
+              )}
             </div>
-          ))}
+          )}
         </div>
 
-        {isHost ? (
-          <button
-            onClick={startGame}
-            disabled={players.length < 1}
-            style={{
-              ...btnPrimary,
-              background: "linear-gradient(135deg, rgba(249,115,22,0.8), rgba(239,68,68,0.8))",
-              border: "1px solid rgba(255,150,100,0.3)"
-            }}
-          >
-            🚀 Start Game
-          </button>
-        ) : (
-          <p style={{ textAlign: "center", color: "rgba(200,235,245,0.4)", fontSize: "0.88rem" }}>
-            Waiting for host to start...
-          </p>
-        )}
+        <div style={{ marginTop: "1.25rem" }}>
+          {isHost ? (
+            <button
+              onClick={startGame}
+              disabled={players.length < 1}
+              style={{
+                ...btnPrimary,
+                background: "linear-gradient(135deg, rgba(249,115,22,0.8), rgba(239,68,68,0.8))",
+                border: "1px solid rgba(255,150,100,0.3)"
+              }}
+            >
+              🚀 Start Game
+            </button>
+          ) : (
+            <p style={{ textAlign: "center", color: "rgba(200,235,245,0.4)", fontSize: "0.88rem" }}>
+              Waiting for host to start...
+            </p>
+          )}
+        </div>
       </div>
     )
   }
@@ -385,7 +526,7 @@ function Kahoot({ fileData, onExit }) {
           ))}
           <p style={{ textAlign: "center", color: "rgba(200,235,245,0.3)", fontSize: "0.82rem", marginTop: "0.75rem" }}>
             {isLastQuestion ? "Game ending..." : "Next question coming up..."}
-            </p> 
+          </p>
         </div>
       )
     }
@@ -394,7 +535,6 @@ function Kahoot({ fileData, onExit }) {
       <div style={glassPanel}>
         <div style={topLine} />
 
-        {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <span style={{ color: "rgba(200,235,245,0.4)", fontSize: "0.82rem", fontFamily: "'Syne', sans-serif" }}>
             {questionIndex + 1} / {totalQuestions}
@@ -417,7 +557,6 @@ function Kahoot({ fileData, onExit }) {
           </span>
         </div>
 
-        {/* Question */}
         <div style={{
           background: "rgba(0,0,0,0.2)",
           borderRadius: "12px",
@@ -431,7 +570,6 @@ function Kahoot({ fileData, onExit }) {
           </p>
         </div>
 
-        {/* Answer result */}
         {answerResult && (
           <div style={{
             textAlign: "center",
@@ -447,7 +585,6 @@ function Kahoot({ fileData, onExit }) {
           </div>
         )}
 
-        {/* Options grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
           {question?.options.map((option, index) => {
             const c = colors[index]
@@ -566,7 +703,7 @@ function Kahoot({ fileData, onExit }) {
           </button>
         </div>
       </div>
-      )
+    )
   }
 
   return null
