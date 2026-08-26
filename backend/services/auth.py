@@ -4,11 +4,17 @@ from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from database import get_db, User
+from database import get_db, User, UserFile
 import os
 
 # JWT configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-this")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. "
+        "Set it in backend/.env for local dev, or in Render's Environment tab for production."
+    )
+    
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
@@ -48,3 +54,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+def verify_file_ownership(file_path: str, current_user: User, db: Session):
+    """Raise 403 if the given file_path doesn't belong to current_user."""
+    owned = db.query(UserFile).filter(
+        UserFile.file_path == file_path,
+        UserFile.user_id == current_user.id
+    ).first()
+    if not owned:
+        raise HTTPException(status_code=403, detail="You don't have access to this file")
