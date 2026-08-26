@@ -3,7 +3,7 @@ import axios from "axios"
 import { useAuth } from "../context/AuthContext"
 
 function Kahoot({ fileData, onExit }) {
-  const { username } = useAuth()
+  const { username, token } = useAuth()
   const [mode, setMode] = useState("menu")
   const [gameCode, setGameCode] = useState("")
   const [joinCode, setJoinCode] = useState("")
@@ -43,7 +43,7 @@ function Kahoot({ fileData, onExit }) {
   }, [])
 
   const connectWebSocket = (code, asHost) => {
-    const wsUrl = `${import.meta.env.VITE_API_URL.replace("https", "wss").replace("http", "ws")}/game/ws/${code}/${username}`
+    const wsUrl = `${import.meta.env.VITE_API_URL.replace("https", "wss").replace("http", "ws")}/game/ws/${code}/${username}?token=${encodeURIComponent(token)}`
     const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 

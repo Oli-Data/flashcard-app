@@ -55,6 +55,25 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
     return user
 
+def get_user_from_token(token: str, db: Session):
+    """
+    Decode a JWT and return the matching user, or None if the token is
+    missing, invalid, expired, or doesn't match a real user.
+    Used for WebSocket auth, where there's no Authorization header for
+    oauth2_scheme to hook into (browsers can't set custom WS headers), so
+    the token arrives as a query param instead and is checked by hand.
+    """
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+    except JWTError:
+        return None
+    return db.query(User).filter(User.email == email).first()
+
 def verify_file_ownership(file_path: str, current_user: User, db: Session):
     """Raise 403 if the given file_path doesn't belong to current_user."""
     owned = db.query(UserFile).filter(

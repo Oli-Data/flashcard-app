@@ -1,5 +1,4 @@
 # Lumitudy
-
 **AI-powered flashcard generator that transforms any textbook into a personalized study session.**
 
 🔗 **Live App:** [Lumitudy.vercel.app](https://Lumitudy.vercel.app)
@@ -8,7 +7,7 @@
 
 ## Overview
 
-Lumitudy allows students to upload PDF, DOCX, or EPUB textbooks and instantly generate AI-powered flashcards from any chapter. Each flashcard includes a source quote from the original text, so users can verify the AI isn't hallucinating. The app also features a multiple choice exam mode for active recall practice.
+Lumitudy allows students to upload PDF, DOCX, or EPUB textbooks and instantly generate AI-powered flashcards from any chapter. Each flashcard includes a source quote from the original text, so users can verify the AI isn't hallucinating. Beyond flashcards, the app includes a multiple choice exam mode with per-chapter leaderboards, a live Kahoot-style multiplayer quiz mode, and a friends system for connecting with other users.
 
 ---
 
@@ -17,10 +16,12 @@ Lumitudy allows students to upload PDF, DOCX, or EPUB textbooks and instantly ge
 - **Multi-format document parsing** — Upload PDF, DOCX, or EPUB files; chapters are automatically detected
 - **AI flashcard generation** — Claude generates contextually accurate flashcards with source verification
 - **Source quote verification** — Every flashcard cites the exact passage from the original text
-- **Exam mode** — Multiple choice questions with instant feedback and end-of-exam review
-- **User authentication** — JWT-based auth with persistent sessions
+- **Exam mode** — Multiple choice questions with instant feedback, score submission, and a per-chapter leaderboard
+- **Kahoot-style multiplayer mode** — Host a live game from any chapter or saved set; players join with a game code over WebSockets, answer against the clock, and climb a real-time leaderboard
+- **Friends** — Add friends with a personal friend code, send and accept requests, and manage your friends list
+- **User authentication** — JWT-based auth with email/password login and bcrypt-hashed passwords
 - **File library** — Uploaded textbooks are saved so users don't need to re-upload
-- **Saved sets** — Flashcard sets are saved to the database and can be reloaded anytime
+- **Saved sets** — Flashcard sets are saved to the database, reloadable anytime, and reusable as the question source for a Kahoot game
 - **Animated card transitions** — Cards swipe left/right with smooth CSS animations
 
 ---
@@ -28,7 +29,7 @@ Lumitudy allows students to upload PDF, DOCX, or EPUB textbooks and instantly ge
 ## Tech Stack
 
 ### Backend
-- **FastAPI** — REST API framework
+- **FastAPI** — REST API framework, including a WebSocket endpoint for the multiplayer game
 - **SQLAlchemy + SQLite** — Database ORM and local storage
 - **PyMuPDF** — PDF parsing
 - **python-docx** — DOCX parsing
@@ -40,6 +41,7 @@ Lumitudy allows students to upload PDF, DOCX, or EPUB textbooks and instantly ge
 ### Frontend
 - **React + Vite** — Frontend framework
 - **Axios** — HTTP client
+- **Native WebSocket API** — Real-time connection for the multiplayer game
 - **CSS-in-JS** — Custom glass morphism design system
 - **Deployed on Vercel**
 
@@ -50,29 +52,36 @@ Lumitudy allows students to upload PDF, DOCX, or EPUB textbooks and instantly ge
 ```
 flashcard-app/
 ├── backend/
-│   ├── main.py              # FastAPI app entry point
-│   ├── database.py          # SQLAlchemy models and session management
+│   ├── main.py               # FastAPI app entry point
+│   ├── database.py           # SQLAlchemy models and session management
+│   ├── game_manager.py       # In-memory game room state for Kahoot mode
 │   ├── routers/
-│   │   ├── auth.py          # Register and login endpoints
-│   │   ├── upload.py        # File upload and file library endpoints
-│   │   ├── flashcards.py    # Flashcard and exam generation endpoints
-│   │   └── sets.py          # Save, retrieve, and delete flashcard sets
+│   │   ├── auth.py           # Register and login endpoints
+│   │   ├── upload.py         # File upload and file library endpoints
+│   │   ├── flashcards.py     # Flashcard and exam generation endpoints
+│   │   ├── sets.py           # Save, retrieve, and delete flashcard sets
+│   │   ├── scores.py         # Submit exam scores and fetch per-chapter leaderboards
+│   │   ├── friends.py        # Friend requests and friends list
+│   │   └── game.py           # Kahoot-style game creation and WebSocket game loop
 │   └── services/
-│       ├── ai.py            # Anthropic Claude API integration
-│       ├── auth.py          # JWT and bcrypt utilities
-│       └── parser.py        # PDF, DOCX, EPUB parsing logic
+│       ├── ai.py              # Anthropic Claude API integration
+│       ├── auth.py            # JWT, bcrypt, and file-ownership utilities
+│       └── parser.py          # PDF, DOCX, EPUB parsing logic
 └── frontend/
     └── src/
-        ├── App.jsx              # Main app component with routing logic
+        ├── App.jsx               # Main app shell, view switching, card navigation
+        ├── main.jsx              # React entry point
         ├── components/
-        │   ├── Auth.jsx         # Login and signup UI
-        │   ├── Upload.jsx       # File upload component
-        │   ├── FileLibrary.jsx  # Saved textbooks panel
+        │   ├── Auth.jsx          # Login and signup UI
+        │   ├── Upload.jsx        # File upload component
+        │   ├── FileLibrary.jsx   # Saved textbooks panel
         │   ├── ChapterSelect.jsx # Chapter picker and flashcard controls
-        │   ├── Flashcard.jsx    # Animated flashcard with source quote
-        │   └── ExamMode.jsx     # Multiple choice exam interface
+        │   ├── Flashcard.jsx     # Animated flashcard with source quote
+        │   ├── ExamMode.jsx      # Multiple choice exam and leaderboard
+        │   ├── Friends.jsx       # Friend requests and friends list UI
+        │   └── Kahoot.jsx        # Multiplayer game host/join/play UI
         └── context/
-            └── AuthContext.jsx  # Global auth state management
+            └── AuthContext.jsx   # Global auth state management
 ```
 
 ---
@@ -80,7 +89,6 @@ flashcard-app/
 ## Local Development
 
 ### Backend
-
 ```bash
 cd backend
 python3 -m venv venv
@@ -89,14 +97,12 @@ pip install -r requirements.txt
 ```
 
 Create a `.env` file in the `backend` folder:
-
 ```
 ANTHROPIC_API_KEY=your_key_here
 SECRET_KEY=your_secret_here
 ```
 
 Start the server:
-
 ```bash
 uvicorn main:app --reload
 ```
@@ -104,20 +110,17 @@ uvicorn main:app --reload
 API docs available at `http://127.0.0.1:8000/docs`
 
 ### Frontend
-
 ```bash
 cd frontend
 npm install
 ```
 
 Create a `.env.local` file in the `frontend` folder:
-
 ```
 VITE_API_URL=http://127.0.0.1:8000
 ```
 
 Start the dev server:
-
 ```bash
 npm run dev
 ```
@@ -138,10 +141,19 @@ npm run dev
 | POST | `/sets/save` | Save a flashcard set |
 | GET | `/sets/` | Get all saved sets |
 | DELETE | `/sets/{id}` | Delete a saved set |
+| POST | `/scores/` | Submit an exam score |
+| GET | `/scores/{chapter}` | Get the top-10 leaderboard for a chapter |
+| POST | `/friends/request` | Send a friend request by friend code |
+| GET | `/friends/` | Get accepted friends |
+| GET | `/friends/requests` | Get pending incoming friend requests |
+| POST | `/friends/accept/{friendship_id}` | Accept a friend request |
+| DELETE | `/friends/{friendship_id}` | Remove a friend or decline a request |
+| POST | `/game/create` | Create a Kahoot-style game room from a chapter |
+| POST | `/game/{game_code}/update-questions` | Host: swap in new questions or a saved set |
+| WS | `/game/ws/{game_code}/{username}` | Real-time game connection for host and players |
 
 ---
 
 ## Built By
-
 **Christian Olivares-Rodriguez** — ML Engineer & Founder of CO³ Labs  
 [GitHub](https://github.com/Oli-Data) · [LinkedIn](https://www.linkedin.com/in/christian-olivares-rodriguez/)

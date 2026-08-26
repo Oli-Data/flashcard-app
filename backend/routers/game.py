@@ -4,7 +4,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPExce
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from database import get_db
-from services.auth import get_current_user
+from services.auth import get_current_user, get_user_from_token
 from services.parser import parse_file
 from services.ai import generate_exam
 from game_manager import game_manager
@@ -96,8 +96,18 @@ async def update_questions(
     return {"message": "Questions updated", "num_questions": len(room.questions)}
 
 @router.websocket("/ws/{game_code}/{username}")
-async def game_websocket(websocket: WebSocket, game_code: str, username: str):
+async def game_websocket(websocket: WebSocket, game_code: str, username: str, db: Session = Depends(get_db)):
     await websocket.accept()
+
+    # Verify the connecting client actually owns this username via their JWT
+    # (sent as a query param since browsers can't set custom WS headers).
+    # Without this, anyone could pass any username in the URL and impersonate
+    # another player or the host.
+    authed_user = get_user_from_token(websocket.query_params.get("token"), db)
+    if not authed_user or authed_user.username != username:
+        await websocket.send_json({"type": "error", "message": "Authentication failed"})
+        await websocket.close()
+        return
 
     room = game_manager.get_room(game_code)
     if not room:

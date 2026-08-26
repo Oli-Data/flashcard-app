@@ -465,7 +465,7 @@ function SourceQuote({ quote }) {
 }
 
 export default function App() {
-  const { user, username, friendCode, logout } = useAuth()
+  const { user, username, friendCode, logout, loading } = useAuth()
   const [fileData, setFileData] = useState(null)
   const [flashcards, setFlashcards] = useState([])
   const [currentCard, setCurrentCard] = useState(0)
@@ -542,6 +542,7 @@ export default function App() {
     }
   }
 
+  if (loading) return null
   if (!user) return <Auth />
 
   return (
