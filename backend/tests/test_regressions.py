@@ -177,16 +177,59 @@ def provider(monkeypatch, payload, stop_reason="end_turn"):
     return call
 
 
-def test_generation_includes_end_of_chapter_and_validates_quote(monkeypatch):
+def test_generation_includes_end_of_chapter_and_copies_source(monkeypatch):
     chapter = "Opening. " * 1500 + "The final concept is gravity."
-    card = {"question": "Final concept?", "answer": "Gravity", "source_quote": "The final concept is gravity."}
+    passages = ai._source_passages(chapter)
+    card = {"question": "Final concept?", "answer": "Gravity", "source_id": len(passages)}
     call = provider(monkeypatch, json.dumps([card]))
-    assert ai.generate_flashcards(chapter, 1) == [card]
-    assert call.call_args.kwargs["messages"][0]["content"] == chapter
-    card["source_quote"] = "An invented quote"
+    result = ai.generate_flashcards(chapter, 1)
+    assert result == [{"question": card["question"], "answer": card["answer"], "source_quote": passages[-1]}]
+    sent = json.loads(call.call_args.kwargs["messages"][0]["content"])
+    assert ai._normalize(" ".join(p["text"] for p in sent)) == ai._normalize(chapter)
+    assert result[0]["source_quote"].endswith("The final concept is gravity.")
+
+
+@pytest.mark.parametrize("source_id", [0, -1, 2, True, "1", 1.5, None])
+def test_invalid_source_references_are_rejected(monkeypatch, source_id):
+    card = {"question": "Concept?", "answer": "Gravity", "source_id": source_id}
     provider(monkeypatch, json.dumps([card]))
-    with pytest.raises(ai.GenerationError, match="source quote"):
-        ai.generate_flashcards(chapter, 1)
+    with pytest.raises(ai.GenerationError):
+        ai.generate_flashcards("The concept is gravity.", 1)
+
+
+def test_quotes_preserve_document_formatting_and_ignore_model_supplied_quote(monkeypatch):
+    chapter = 'The “efﬁcient” method uses inter-\nnal energy.\n\nIts output is 42\u00a0joules.'
+    cards = [
+        {"question": "Which energy?", "answer": "Internal energy", "source_id": 1,
+         "source_quote": "A made-up quote that must never reach the user."},
+        {"question": "How much output?", "answer": "42 joules", "source_id": 1},
+    ]
+    provider(monkeypatch, json.dumps(cards))
+    result = ai.generate_flashcards(chapter, 2)
+    assert len(result) == 2
+    assert all(card["source_quote"] == chapter for card in result)
+    assert all(set(card) == {"question", "answer", "source_quote"} for card in result)
+
+
+@pytest.mark.parametrize("chapter", ["x" * 120_000, " \n" * 2000 + "A fact.", "A sentence.\n\n" * 3000])
+def test_passages_preserve_all_non_whitespace_source_text(chapter):
+    passages = ai._source_passages(chapter)
+    assert "".join("".join(p.split()) for p in passages) == "".join(chapter.split())
+    assert all(p in chapter and len(p) <= ai.MAX_PASSAGE_CHARS for p in passages)
+
+
+def test_flashcard_endpoint_returns_document_quote(api, monkeypatch):
+    client, db, user, _ = api
+    record = owned_file(db, user)
+    provider(monkeypatch, json.dumps([
+        {"question": "What is on page one?", "answer": "Content", "source_id": 1},
+    ]))
+    response = client.post("/flashcards/generate", json={
+        "file_path": record.file_path, "chapter": "Pages 1-5", "num_cards": 1,
+    })
+    assert response.status_code == 200, response.text
+    quote = response.json()["flashcards"][0]["source_quote"]
+    assert "Content on page 1" in quote and "Content on page 5" in quote
 
 
 @pytest.mark.parametrize("payload", ["not JSON", "{}", '[{"question":"x"}]', json.dumps([dict(QUESTIONS[0], correct_index=4)]), json.dumps([dict(QUESTIONS[0], options=["a", "a", "c", "d"])])])
