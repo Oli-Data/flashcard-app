@@ -33,6 +33,8 @@ class GameRoom:
         self.state = "lobby"  # lobby, question, results, finished
         self.current_question_index = 0
         self.question_start_time = None
+        self.question_id = None
+        self.game_task = None
         self.time_limit = 20  # seconds per question
 
     def add_player(self, username: str, websocket: WebSocket):
@@ -66,7 +68,7 @@ class GameRoom:
     async def broadcast(self, message: dict):
         """Send a message to all connected players"""
         disconnected = []
-        for username, player in self.players.items():
+        for username, player in list(self.players.items()):
             try:
                 await player.websocket.send_json(message)
             except Exception:

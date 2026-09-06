@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useRef } from "react"
 import axios from "axios"
 
 function ExamMode({ fileData, onExit }) {
@@ -6,6 +6,9 @@ function ExamMode({ fileData, onExit }) {
   const [numQuestions, setNumQuestions] = useState(10)
   const [loading, setLoading] = useState(false)
   const [questions, setQuestions] = useState([])
+  const [examId, setExamId] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const requestPending = useRef(false)
   const [currentQ, setCurrentQ] = useState(0)
   const [selected, setSelected] = useState(null)
   const [submitted, setSubmitted] = useState(false)
@@ -26,6 +29,7 @@ function ExamMode({ fileData, onExit }) {
         num_questions: numQuestions
       })
       setQuestions(res.data.questions)
+      setExamId(res.data.exam_id)
       setCurrentQ(0)
       setScore(0)
       setResults([])
@@ -34,36 +38,62 @@ function ExamMode({ fileData, onExit }) {
       setSubmitted(false)
       setShowLeaderboard(false)
     } catch (err) {
-      setError("Failed to generate exam. Please try again.")
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Failed to generate exam. Please try again.")
     } finally {
       setLoading(false)
     }
   }
 
   const handleSelect = (index) => {
-    if (submitted) return
+    if (submitted || requestPending.current) return
     setSelected(index)
   }
 
-  const handleSubmit = () => {
-    if (selected === null) return
-    setSubmitted(true)
-    const correct = selected === questions[currentQ].correct_index
-    if (correct) setScore(s => s + 1)
-    setResults(r => [...r, {
-      question: questions[currentQ].question,
-      correct: correct,
-      selected: questions[currentQ].options[selected],
-      answer: questions[currentQ].options[questions[currentQ].correct_index]
-    }])
+  const handleSubmit = async () => {
+    if (selected === null || submitted || requestPending.current) return
+    requestPending.current = true
+    setBusy(true)
+    setError(null)
+    try {
+      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/flashcards/exam/${examId}/answer`, {
+        question_index: currentQ,
+        answer_index: selected
+      })
+      setQuestions(previous => previous.map((question, index) => index === currentQ
+        ? { ...question, correct_index: data.correct_index } : question))
+      setSubmitted(true)
+      setScore(data.score)
+      setResults(previous => [...previous, {
+        question: questions[currentQ].question,
+        correct: data.correct,
+        selected: questions[currentQ].options[selected],
+        answer: questions[currentQ].options[data.correct_index]
+      }])
+    } catch (err) {
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not submit your answer. Please try again.")
+    } finally {
+      requestPending.current = false
+      setBusy(false)
+    }
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (!submitted || requestPending.current) return
     if (currentQ + 1 >= questions.length) {
-      const finalScore = results.filter(r => r.correct).length + (selected === questions[currentQ].correct_index ? 1 : 0)
-      setFinished(true)
-      submitScore(finalScore, questions.length)
-      fetchLeaderboard()
+      requestPending.current = true
+      setBusy(true)
+      setError(null)
+      try {
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/scores/`, { exam_id: examId })
+        setScore(data.score)
+        setFinished(true)
+        await fetchLeaderboard()
+      } catch (err) {
+        setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Could not save your result. Please try again.")
+      } finally {
+        requestPending.current = false
+        setBusy(false)
+      }
     } else {
       setCurrentQ(q => q + 1)
       setSelected(null)
@@ -71,23 +101,11 @@ function ExamMode({ fileData, onExit }) {
     }
   }
 
-  const submitScore = async (finalScore, total) => {
-    try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/scores/`, {
-        chapter: selectedChapter,
-        score: finalScore,
-        total: total
-      })
-    } catch (err) {
-    console.error("Failed to submit score")
-    }
-  }
-
   const fetchLeaderboard = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/scores/${encodeURIComponent(selectedChapter)}`)
       setLeaderboard(res.data)
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch leaderboard")
     }
   }
@@ -199,7 +217,7 @@ function ExamMode({ fileData, onExit }) {
 
   // Results screen
   if (finished) {
-    const finalScore = results.filter(r => r.correct).length
+    const finalScore = score
     const percentage = Math.round((finalScore / questions.length) * 100)
 
     return (
@@ -363,27 +381,28 @@ function ExamMode({ fileData, onExit }) {
         </button>
       ))}
 
+      {error && <p role="alert" style={{ color: "#f87171" }}>{error}</p>}
       {selected !== null && !submitted && (
-        <button onClick={handleSubmit} style={{
+        <button onClick={handleSubmit} disabled={busy} style={{
           width: "100%", padding: "0.8rem",
           background: "linear-gradient(135deg, rgba(0,150,200,0.7), rgba(100,80,220,0.7))",
           color: "#e0f4ff", border: "1px solid rgba(0,200,240,0.2)",
           borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
           fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
         }}>
-          Submit Answer
+          {busy ? "Submitting..." : "Submit Answer"}
         </button>
       )}
 
       {submitted && (
-        <button onClick={handleNext} style={{
+        <button onClick={handleNext} disabled={busy} style={{
           width: "100%", padding: "0.8rem",
           background: "linear-gradient(135deg, rgba(0,180,100,0.7), rgba(0,160,80,0.7))",
           color: "#aff5d0", border: "1px solid rgba(0,220,120,0.3)",
           borderRadius: "10px", cursor: "pointer", marginTop: "0.75rem",
           fontSize: "0.95rem", fontFamily: "'DM Sans', sans-serif", fontWeight: 500
         }}>
-          {currentQ + 1 >= questions.length ? "See Results" : "Next Question"}
+          {busy ? "Saving..." : currentQ + 1 >= questions.length ? "See Results" : "Next Question"}
         </button>
       )}
     </div>

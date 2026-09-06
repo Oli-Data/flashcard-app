@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import upload, flashcards, auth, sets, scores, friends
 from dotenv import load_dotenv
-from database import create_tables
-from routers import upload, flashcards, auth, sets, scores, friends, game
 
 # Load environment variables from .env file
 load_dotenv()
+
+from database import create_tables
+from routers import upload, flashcards, auth, sets, scores, friends, game
 
 # Create database tables on startup
 create_tables()

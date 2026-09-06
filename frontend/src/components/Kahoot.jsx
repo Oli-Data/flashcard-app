@@ -33,7 +33,6 @@ function Kahoot({ fileData, onExit }) {
 
   const wsRef = useRef(null)
   const timerRef = useRef(null)
-  const questionStartRef = useRef(null)
 
   useEffect(() => {
     return () => {
@@ -85,7 +84,6 @@ function Kahoot({ fileData, onExit }) {
         setSelected(null)
         setAnswered(false)
         setAnswerResult(null)
-        questionStartRef.current = Date.now()
         setMode("game")
 
         if (timerRef.current) clearInterval(timerRef.current)
@@ -151,7 +149,7 @@ function Kahoot({ fileData, onExit }) {
       })
       connectWebSocket(res.data.game_code, true)
     } catch (err) {
-      setError("Failed to create game. Please try again.")
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Failed to create game. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -174,12 +172,11 @@ function Kahoot({ fileData, onExit }) {
     setSelected(index)
     setAnswered(true)
     clearInterval(timerRef.current)
-    const timeTaken = (Date.now() - questionStartRef.current) / 1000
     if (wsRef.current) {
       wsRef.current.send(JSON.stringify({
         type: "submit_answer",
         answer_index: index,
-        time_taken: timeTaken
+        question_id: question.question_id
       }))
     }
   }
@@ -196,7 +193,7 @@ function Kahoot({ fileData, onExit }) {
       setQuestionsReady(true)
       setQuestionsCount(res.data.num_questions)
     } catch (err) {
-      setError("Failed to update questions")
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Failed to update questions")
     } finally {
       setUpdatingQuestions(false)
     }
@@ -212,7 +209,7 @@ function Kahoot({ fileData, onExit }) {
       setQuestionsReady(true)
       setQuestionsCount(res.data.num_questions)
     } catch (err) {
-      setError("Failed to update questions")
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Failed to update questions")
     } finally {
       setUpdatingQuestions(false)
     }

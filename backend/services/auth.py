@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db, User, UserFile
 import os
+from services.storage import user_file_path
 
 # JWT configuration
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -82,3 +83,8 @@ def verify_file_ownership(file_path: str, current_user: User, db: Session):
     ).first()
     if not owned:
         raise HTTPException(status_code=403, detail="You don't have access to this file")
+    try:
+        user_file_path(owned.file_path, current_user.id)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="You don't have access to this file")
+    return owned

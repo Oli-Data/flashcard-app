@@ -1,14 +1,16 @@
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
+from datetime import datetime, timedelta
+from uuid import uuid4
+import os
 import random
 import string
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./flashcards_v2.db"
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./flashcards_v2.db")
 
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -76,6 +78,18 @@ class Friendship(Base):
     receiver_username = Column(String)
     status = Column(String, default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class ExamAttempt(Base):
+    """Keep answer keys and accepted answers on the server across restarts."""
+    __tablename__ = "exam_attempts"
+    id = Column(String, primary_key=True, default=lambda: uuid4().hex)
+    user_id = Column(Integer, nullable=False, index=True)
+    chapter = Column(String, nullable=False)
+    questions = Column(Text, nullable=False)
+    answers = Column(Text, nullable=False, default="[]")
+    score_id = Column(Integer, unique=True, nullable=True)
+    expires_at = Column(DateTime, nullable=False, default=lambda: datetime.utcnow() + timedelta(hours=24))
+
 
 def get_db():
     """Dependency that provides a database session and closes it after use"""

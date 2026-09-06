@@ -27,7 +27,7 @@ function ChapterSelect({ fileData, onGenerate, onExamMode, onKahoot }) {
       setSetTitle(selectedChapter)
       onGenerate(res.data.flashcards)
     } catch (err) {
-      setError("Failed to generate flashcards. Please try again.")
+      setError(typeof err.response?.data?.detail === "string" ? err.response.data.detail : "Failed to generate flashcards. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -45,7 +45,7 @@ function ChapterSelect({ fileData, onGenerate, onExamMode, onKahoot }) {
         cards: currentCards
       })
       setSavedMessage("Set saved successfully!")
-    } catch (err) {
+    } catch {
       setError("Failed to save set.")
     } finally {
       setSaving(false)

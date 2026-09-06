@@ -4,39 +4,31 @@ import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
 import os
+import zipfile
 
 def parse_pdf(file_path: str) -> dict:
     """
     Parse a PDF file and extract chapters as a dictionary.
     Uses the table of contents if available, otherwise splits by page groups.
     """
-    doc = fitz.open(file_path)
-    chapters = {}
-    toc = doc.get_toc()
-
-    if toc:
-        # Use table of contents to identify chapter boundaries
-        for i, entry in enumerate(toc):
-            level, title, page = entry
-            if level == 1:  # Top level chapters only
-                start_page = page - 1
-                end_page = toc[i + 1][2] - 1 if i + 1 < len(toc) else len(doc)
-                text = ""
-                for p in range(start_page, end_page):
-                    text += doc[p].get_text()
-                chapters[title] = text.strip()
-    else:
-        # No TOC available — split into chunks of 10 pages
-        total_pages = len(doc)
-        chunk_size = 10
-        for i in range(0, total_pages, chunk_size):
-            text = ""
-            for p in range(i, min(i + chunk_size, total_pages)):
-                text += doc[p].get_text()
-            chapters[f"Pages {i+1}-{min(i+chunk_size, total_pages)}"] = text.strip()
-
-    doc.close()
-    return chapters
+    with fitz.open(file_path) as doc:
+        chapters = {}
+        if len(doc) > 2000:
+            raise ValueError("PDFs must have 2,000 pages or fewer")
+        toc = [entry for entry in doc.get_toc()
+               if entry[0] == 1 and 1 <= entry[2] <= len(doc)]
+        toc.sort(key=lambda entry: entry[2])
+        if toc:
+            # Subsections must not truncate their parent chapter.
+            for i, (_, title, page) in enumerate(toc):
+                end_page = next((e[2] - 1 for e in toc[i + 1:] if e[2] > page), len(doc))
+                label = title if title not in chapters else f"{title} (page {page})"
+                chapters[label] = "\n".join(doc[p].get_text() for p in range(page - 1, end_page)).strip()
+        else:
+            for i in range(0, len(doc), 10):
+                end = min(i + 10, len(doc))
+                chapters[f"Pages {i+1}-{end}"] = "\n".join(doc[p].get_text() for p in range(i, end)).strip()
+        return chapters
 
 def parse_docx(file_path: str) -> dict:
     """
@@ -90,6 +82,11 @@ def parse_file(file_path: str) -> dict:
     Supports PDF, DOCX, and EPUB formats.
     """
     ext = os.path.splitext(file_path)[1].lower()
+
+    if ext in {".docx", ".epub"}:
+        with zipfile.ZipFile(file_path) as archive:
+            if sum(item.file_size for item in archive.infolist()) > 100 * 1024 * 1024:
+                raise ValueError("Document expands beyond the supported size")
 
     if ext == ".pdf":
         return parse_pdf(file_path)
